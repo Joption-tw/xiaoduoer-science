@@ -562,7 +562,7 @@ function drawRays(rays, time) {
     }
     // 光點流動
     if (S.flow) {
-      const L = Math.min(L1, 2500) + L2, gap = 70, speed = 110;
+      const L = Math.min(L1, 2500) + L2, gap = 70, speed = 45;
       for (let s = (time * speed) % gap; s < L; s += gap) {
         let x, y;
         if (s < L1) { const k = s / L1; x = r.Oc[0] + (r.Pc[0] - r.Oc[0]) * k; y = r.Oc[1] + (r.Pc[1] - r.Oc[1]) * k; }

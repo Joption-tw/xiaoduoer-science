@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小朵兒的理化教室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* 版面：大封面（名字 + 原子花）→ 單元卡片 → 今日小知識。貼紙感，粉紅花朵是小朵兒的記號 */
+  :root {
+    --bg: #fff8ef;
+    --ink: #2b2540;
+    --muted: #6d6782;
+    --card: #ffffff;
+    --line: #2b2540;
+    --pink: #ff7eb6;
+    --pink-soft: #ffe0ee;
+    --phy: #4f8cff;
+    --phy-soft: #e3edff;
+    --chem: #ff7a59;
+    --chem-soft: #ffe8e0;
+    --sun: #ffd23f;
+    --mint: #3ccf9e;
+    --mint-soft: #e4f9ef;
+    --shadow: 4px 4px 0 var(--line);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    line-height: 1.6;
+    background-image: radial-gradient(#f1e3cf 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+  /* 頂部 */
+  header { padding: 20px 0 0; }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.2rem; }
+  .logo svg { width: 44px; height: 44px; flex: none; }
+  .nav small { color: var(--muted); font-weight: 500; }
+
+  /* 封面 */
+  .hero {
+    margin-top: 24px; position: relative; overflow: hidden;
+    background: var(--card); border: 3px solid var(--line); border-radius: 28px;
+    box-shadow: 6px 6px 0 var(--line);
+    padding: 40px 36px; display: grid; grid-template-columns: 1.25fr 1fr; gap: 24px; align-items: center;
+  }
+  .hero::before {
+    content: ""; position: absolute; right: -90px; top: -90px; width: 300px; height: 300px; border-radius: 50%;
+    background: var(--pink-soft); z-index: 0;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .hello {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--pink); color: #fff; font-weight: 900;
+    padding: 4px 16px; border-radius: 999px; border: 2px solid var(--line); font-size: 1rem;
+    transform: rotate(-2deg); box-shadow: 2px 2px 0 var(--line);
+  }
+  .hero h1 { font-size: clamp(2.1rem, 5.2vw, 3.4rem); line-height: 1.2; margin: 16px 0 14px; font-weight: 900; text-wrap: balance; }
+  .hero h1 .hl { background: linear-gradient(transparent 58%, var(--sun) 58%); padding: 0 4px; }
+  .hero h1 .nick { color: var(--pink); -webkit-text-stroke: 1.5px var(--line); paint-order: stroke fill; }
+  .nameplate {
+    display: inline-flex; align-items: stretch; margin: 0 0 18px; border: 2.5px solid var(--line);
+    border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); background: var(--card);
+  }
+  .nameplate span { padding: 6px 12px; font-weight: 700; }
+  .nameplate .k { background: var(--ink); color: #fff; font-size: .85rem; display: grid; place-items: center; letter-spacing: .1em; }
+  .nameplate .v { font-size: 1.25rem; font-weight: 900; letter-spacing: .15em; }
+  .hero p { color: var(--muted); font-size: 1.08rem; margin: 0 0 22px; max-width: 30em; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    font: inherit; font-weight: 700; font-size: 1.02rem; color: var(--ink);
+    background: var(--sun); border: 2.5px solid var(--line); border-radius: 14px;
+    padding: 10px 20px; box-shadow: var(--shadow); text-decoration: none;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--line); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--line); }
+  .btn:focus-visible, .chip:focus-visible, .card:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+
+  /* 右側：照片 + 原子花 */
+  .hero-art { position: relative; height: 340px; display: grid; place-items: center; }
+  .polaroid {
+    margin: 0; background: #fff; border: 3px solid var(--line); border-radius: 10px;
+    box-shadow: 6px 6px 0 var(--line); padding: 12px 12px 6px; width: 220px; transform: rotate(3deg);
+    position: relative; z-index: 1;
+  }
+  .polaroid::before {
+    content: ""; position: absolute; top: -14px; left: 50%; width: 80px; height: 26px;
+    transform: translateX(-50%) rotate(-4deg); background: rgba(255, 126, 182, .75);
+    border: 2px solid var(--line); border-radius: 4px;
+  }
+  .photo {
+    aspect-ratio: 1; max-width: 100%; border: 2px solid var(--line); border-radius: 6px; overflow: hidden;
+    background: repeating-linear-gradient(45deg, var(--pink-soft) 0 12px, #fff3f8 12px 24px);
+    position: relative; display: grid; place-items: center;
+  }
+  .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .photo-empty { text-align: center; color: var(--muted); font-weight: 700; font-size: .95rem; line-height: 1.8; }
+  .photo-empty b { display: block; font-size: 2rem; }
+  .polaroid figcaption { text-align: center; font-weight: 900; padding: 8px 0 4px; }
+  .polaroid figcaption small { display: block; font-weight: 500; color: var(--muted); font-size: .8rem; margin-top: -2px; }
+  .sticker { position: absolute; z-index: 2; animation: float 4.5s ease-in-out infinite; }
+  .sticker svg { display: block; width: 100%; height: 100%; filter: drop-shadow(3px 3px 0 var(--line)); }
+  .s1 { width: 96px; height: 96px; left: 0; top: 6%; }
+  .s2 { width: 64px; height: 64px; right: 2%; top: 38%; animation-delay: -1.5s; }
+  .s3 { width: 52px; height: 52px; left: 10%; bottom: 4%; animation-delay: -3s; }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-10px) rotate(10deg); } }
+
+  /* 區塊 */
+  section { margin-top: 48px; }
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .sec-head h2 { margin: 0; font-size: 1.6rem; font-weight: 900; }
+  .sec-head h2 span { font-size: 1rem; color: var(--muted); font-weight: 500; margin-left: 6px; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font: inherit; font-weight: 700; cursor: pointer; padding: 6px 16px; border-radius: 999px;
+    border: 2px solid var(--line); background: var(--card); color: var(--ink);
+  }
+  .chip.on { background: var(--ink); color: #fff; }
+
+  /* 單元卡片 */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+  .card {
+    position: relative; background: var(--card); border: 2.5px solid var(--line); border-radius: 20px;
+    padding: 20px 18px 18px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s;
+    text-decoration: none; color: inherit; display: block;
+  }
+  .card:hover { transform: translate(-3px, -3px) rotate(-.5deg); box-shadow: 7px 7px 0 var(--line); }
+  .card .icon {
+    width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; font-size: 1.8rem;
+    border: 2px solid var(--line); margin-bottom: 12px;
+  }
+  .card.phy .icon { background: var(--phy-soft); }
+  .card.chem .icon { background: var(--chem-soft); }
+  .card h3 { margin: 0 0 4px; font-size: 1.18rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .93rem; }
+  .tag {
+    position: absolute; top: 16px; right: 14px; font-size: .78rem; font-weight: 700; color: #fff;
+    padding: 2px 10px; border-radius: 999px; border: 2px solid var(--line);
+  }
+  .phy .tag { background: var(--phy); }
+  .chem .tag { background: var(--chem); }
+  .soon { display: inline-block; margin-top: 12px; font-size: .8rem; font-weight: 700; color: var(--muted);
+    border: 1.5px dashed var(--muted); border-radius: 8px; padding: 1px 8px; }
+  .card.hide { display: none; }
+  .card.ready { background: var(--pink-soft); }
+  .open { display: inline-block; margin-top: 12px; font-size: .82rem; font-weight: 900; color: #fff;
+    background: var(--mint); border: 2px solid var(--line); border-radius: 8px; padding: 1px 10px; }
+
+  /* 今日小知識 */
+  .fact {
+    background: var(--sun); border: 3px solid var(--line); border-radius: 24px; box-shadow: 6px 6px 0 var(--line);
+    padding: 26px 28px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  }
+  .fact-emoji { font-size: 3rem; }
+  .fact-body { flex: 1; min-width: 220px; }
+  .fact-body b { display: block; font-size: .95rem; letter-spacing: .1em; }
+  .fact-body p { margin: 4px 0 0; font-size: 1.2rem; font-weight: 700; }
+  .fact .btn { background: #fff; }
+
+  footer { margin: 56px 0 32px; text-align: center; color: var(--muted); font-size: .92rem; }
+  footer .heart { color: var(--pink); }
+
+  @media (max-width: 720px) {
+    .hero { grid-template-columns: 1fr; padding: 28px 20px; }
+    .hero-art { height: 300px; }
+    .polaroid { width: 200px; }
+    .s1 { width: 72px; height: 72px; } .s2 { width: 52px; height: 52px; } .s3 { width: 44px; height: 44px; }
+    .nav small { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sticker { animation: none; }
+    .btn, .card { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- 原子花：三條原子軌道疊成花瓣，是小朵兒的記號 -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="atom-flower" viewBox="0 0 100 100">
+        <g stroke="#2b2540" stroke-width="3.5" fill="#ffc2dc">
+          <ellipse cx="50" cy="50" rx="44" ry="17"/>
+          <ellipse cx="50" cy="50" rx="44" ry="17" transform="rotate(60 50 50)"/>
+          <ellipse cx="50" cy="50" rx="44" ry="17" transform="rotate(120 50 50)"/>
+        </g>
+        <g fill="none" stroke="#ff7eb6" stroke-width="2">
+          <ellipse cx="50" cy="50" rx="36" ry="10"/>
+          <ellipse cx="50" cy="50" rx="36" ry="10" transform="rotate(60 50 50)"/>
+          <ellipse cx="50" cy="50" rx="36" ry="10" transform="rotate(120 50 50)"/>
+        </g>
+        <circle cx="50" cy="50" r="13" fill="#ffd23f" stroke="#2b2540" stroke-width="3.5"/>
+        <circle cx="94" cy="50" r="5.5" fill="#4f8cff" stroke="#2b2540" stroke-width="2.5"/>
+        <circle cx="28" cy="88" r="5.5" fill="#3ccf9e" stroke="#2b2540" stroke-width="2.5"/>
+        <circle cx="28" cy="12" r="5.5" fill="#ff7a59" stroke="#2b2540" stroke-width="2.5"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="wrap">
+    <header>
+      <div class="nav">
+        <div class="logo"><svg aria-hidden="true"><use href="#atom-flower"/></svg>小朵兒的理化教室</div>
+        <small>爸爸做給小朵兒的專屬教材</small>
+      </div>
+
+      <div class="hero">
+        <div>
+          <span class="hello">🌸 嗨，小朵兒</span>
+          <h1><span class="nick">小朵兒</span>，<br>一起把<span class="hl">理化</span><br>變成好玩的事！</h1>
+          <div class="nameplate"><span class="k">專屬</span><span class="v">小朵兒</span></div>
+          <p>從生活裡的小現象出發，一步一步看懂物理和化學。不懂的地方，隨時回來複習就好。</p>
+          <a class="btn" href="#units">開始學習 →</a>
+        </div>
+        <div class="hero-art">
+          <figure class="polaroid">
+            <div class="photo">
+              <img src="photo.jpg" alt="小朵兒的照片" onerror="this.remove()">
+              <div class="photo-empty"><b>📷</b>小朵兒的照片<br>放這裡</div>
+            </div>
+            <figcaption>小朵兒 ✨<small>未來的小科學家</small></figcaption>
+          </figure>
+          <div class="sticker s1" aria-hidden="true"><svg><use href="#atom-flower"/></svg></div>
+          <div class="sticker s2" aria-hidden="true"><svg><use href="#atom-flower"/></svg></div>
+          <div class="sticker s3" aria-hidden="true"><svg><use href="#atom-flower"/></svg></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="units">
+        <div class="sec-head">
+          <h2>學習單元<span>小朵兒想學哪一個？</span></h2>
+          <div class="filters">
+            <button class="chip on" data-f="all">全部</button>
+            <button class="chip" data-f="phy">物理</button>
+            <button class="chip" data-f="chem">化學</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <a class="card phy ready" href="optics.html"><span class="tag">物理</span><div class="icon">🌈</div><h3>光：面鏡與透鏡</h3><p>拖拉物體看成像、常考表格、小測驗</p><span class="open">已開放 · 互動動畫 ▶</span></a>
+          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">📏</div><h3>基本測量</h3><p>長度、體積、質量與密度</p><span class="soon">內容準備中</span></a>
+          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">🧊</div><h3>物質的世界</h3><p>三態變化、純物質與混合物</p><span class="soon">內容準備中</span></a>
+          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">🔊</div><h3>波動與聲音</h3><p>波的性質、聲音怎麼傳播</p><span class="soon">內容準備中</span></a>
+          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">🌡️</div><h3>溫度與熱</h3><p>熱的傳播、比熱與熱量</p><span class="soon">內容準備中</span></a>
+          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">⚛️</div><h3>原子與元素</h3><p>原子結構、週期表</p><span class="soon">內容準備中</span></a>
+          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">🔥</div><h3>化學反應</h3><p>質量守恆、化學式與計量</p><span class="soon">內容準備中</span></a>
+          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">🍋</div><h3>酸鹼鹽</h3><p>電解質、pH 值與中和</p><span class="soon">內容準備中</span></a>
+          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">🚀</div><h3>力與運動</h3><p>速度、加速度、牛頓定律</p><span class="soon">內容準備中</span></a>
+          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">⚡</div><h3>電與磁</h3><p>電路、歐姆定律、電磁感應</p><span class="soon">內容準備中</span></a>
+        </div>
+      </section>
+
+      <section>
+        <div class="fact">
+          <div class="fact-emoji">💡</div>
+          <div class="fact-body">
+            <b>小朵兒的今日小知識</b>
+            <p id="fact-text">打雷時先看到閃電、才聽到雷聲，因為光比聲音快得多！</p>
+          </div>
+          <button class="btn" id="fact-btn">再來一個 🎲</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
+  </div>
+
+<script>
+  // 單元篩選
+  const chips = document.querySelectorAll('.chip');
+  const cards = document.querySelectorAll('.card');
+  chips.forEach(chip => chip.addEventListener('click', () => {
+    chips.forEach(c => c.classList.toggle('on', c === chip));
+    const f = chip.dataset.f;
+    cards.forEach(card => card.classList.toggle('hide', f !== 'all' && !card.classList.contains(f)));
+  }));
+
+  // 今日小知識
+  const facts = [
+    '打雷時先看到閃電、才聽到雷聲，因為光比聲音快得多！',
+    '太陽光跑到地球大約要 8 分 20 秒。',
+    '聲音在空氣中每秒約跑 340 公尺，在水裡快了 4 倍多。',
+    '水在 4°C 時密度最大，所以湖面結冰了，底下的魚還能活。',
+    '鑽石和鉛筆芯（石墨）都是由碳原子組成的！',
+    '空氣裡大約 78% 是氮氣，氧氣只佔約 21%。',
+    'pH 7 是中性，檸檬汁大約 pH 2，是酸性的喔。',
+    '鐵生鏽是一種很慢的氧化反應。',
+    '花朵的顏色來自花瓣裡的色素，有些色素遇到酸鹼還會變色！'
+  ];
+  let idx = 0;
+  document.getElementById('fact-btn').addEventListener('click', () => {
+    let n;
+    do { n = Math.floor(Math.random() * facts.length); } while (n === idx);
+    idx = n;
+    document.getElementById('fact-text').textContent = facts[n];
+  });
+</script>
+</body>
+</html>

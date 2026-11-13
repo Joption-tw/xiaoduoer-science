@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* 版面：大封面（名字 + 原子花）→ 單元卡片 → 今日小知識。貼紙感，粉紅花朵是小朵兒的記號 */
+  /* 版面：大封面（名字 + 大鳳蝶）→ 單元卡片 → 今日小知識。貼紙感，可愛版大鳳蝶是小朵兒的記號 */
   :root {
     --bg: #fff8ef;
     --ink: #2b2540;
@@ -42,7 +42,7 @@
   header { padding: 20px 0 0; }
   .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.2rem; }
-  .logo svg { width: 44px; height: 44px; flex: none; }
+  .logo svg { width: 50px; height: 47px; flex: none; }
   .nav small { color: var(--muted); font-weight: 500; }
 
   /* 封面 */
@@ -84,7 +84,7 @@
   .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--line); }
   .btn:focus-visible, .chip:focus-visible, .card:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 
-  /* 右側：照片 + 原子花 */
+  /* 右側：照片 + 大鳳蝶 */
   .hero-art { position: relative; height: 340px; display: grid; place-items: center; }
   .polaroid {
     margin: 0; background: #fff; border: 3px solid var(--line); border-radius: 10px;
@@ -107,11 +107,18 @@
   .polaroid figcaption { text-align: center; font-weight: 900; padding: 8px 0 4px; }
   .polaroid figcaption small { display: block; font-weight: 500; color: var(--muted); font-size: .8rem; margin-top: -2px; }
   .sticker { position: absolute; z-index: 2; animation: float 4.5s ease-in-out infinite; }
-  .sticker svg { display: block; width: 100%; height: 100%; filter: drop-shadow(3px 3px 0 var(--line)); }
-  .s1 { width: 96px; height: 96px; left: 0; top: 6%; }
-  .s2 { width: 64px; height: 64px; right: 2%; top: 38%; animation-delay: -1.5s; }
-  .s3 { width: 52px; height: 52px; left: 10%; bottom: 4%; animation-delay: -3s; }
-  @keyframes float { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-10px) rotate(10deg); } }
+  .sticker svg { display: block; width: 100%; height: 100%; filter: drop-shadow(3px 3px 0 rgba(43,37,64,.35)); }
+  .s1 { width: 150px; height: 140px; left: -4%; top: 0; --tilt: -14deg; }
+  .s2 { width: 72px; height: 68px; right: 0; top: 34%; animation-delay: -1.5s; --tilt: 16deg; }
+  .s3 { width: 54px; height: 50px; left: 12%; bottom: 2%; animation-delay: -3s; --tilt: -6deg; }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(var(--tilt, 0deg)); } 50% { transform: translateY(-12px) rotate(calc(var(--tilt, 0deg) + 6deg)); } }
+  /* 大鳳蝶拍翅膀：只有翅膀左右收合，身體不動 */
+  .bf .wing { transform-box: view-box; transform-origin: 60px 56px; animation: flap .8s ease-in-out infinite alternate; }
+  .s2 .wing { animation-duration: .65s; animation-delay: -.3s; }
+  .s3 .wing { animation-duration: .55s; animation-delay: -.5s; }
+  .logo .wing { animation-duration: 1.6s; }
+  @keyframes flap { from { transform: scaleX(1); } to { transform: scaleX(.5); } }
+  .trail { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
 
   /* 區塊 */
   section { margin-top: 48px; }
@@ -173,34 +180,55 @@
     .hero { grid-template-columns: 1fr; padding: 28px 20px; }
     .hero-art { height: 300px; }
     .polaroid { width: 200px; }
-    .s1 { width: 72px; height: 72px; } .s2 { width: 52px; height: 52px; } .s3 { width: 44px; height: 44px; }
+    .s1 { width: 96px; height: 90px; } .s2 { width: 56px; height: 52px; } .s3 { width: 44px; height: 41px; }
     .nav small { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .sticker { animation: none; }
+    .sticker, .bf .wing { animation: none; }
     .btn, .card { transition: none; }
   }
 </style>
 </head>
 <body>
-  <!-- 原子花：三條原子軌道疊成花瓣，是小朵兒的記號 -->
+  <!-- 可愛版大鳳蝶：深藍黑翅膀、前翅基部紅斑、後翅白斑和尾突，是小朵兒的記號。
+       翅膀和身體分開，翅膀可以單獨拍動 -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
-      <symbol id="atom-flower" viewBox="0 0 100 100">
-        <g stroke="#2b2540" stroke-width="3.5" fill="#ffc2dc">
-          <ellipse cx="50" cy="50" rx="44" ry="17"/>
-          <ellipse cx="50" cy="50" rx="44" ry="17" transform="rotate(60 50 50)"/>
-          <ellipse cx="50" cy="50" rx="44" ry="17" transform="rotate(120 50 50)"/>
+      <g id="bf-half" stroke="#2b2540" stroke-width="3" stroke-linejoin="round">
+        <!-- 後翅（含尾突） -->
+        <path d="M57 54 C44 54 24 58 20 72 C17 83 26 92 35 90 C36 98 38 106 44 106 C49 105 48 96 46 89 C54 84 58 70 57 54 Z" fill="#36315c"/>
+        <path d="M53 61 C45 59 33 63 30 71 C29 79 39 82 46 78 C52 74 55 68 53 61 Z" fill="#fff6fb" stroke="none"/>
+        <circle cx="38" cy="72" r="3.4" fill="#ff7eb6" stroke="none"/>
+        <circle cx="46" cy="69" r="2.4" fill="#ff7eb6" stroke="none"/>
+        <circle cx="25" cy="82" r="2.3" fill="#ff5c7c" stroke="none"/>
+        <circle cx="33" cy="87" r="2" fill="#ff5c7c" stroke="none"/>
+        <circle cx="44" cy="101" r="2.2" fill="#ffd23f" stroke="none"/>
+        <!-- 前翅 -->
+        <path d="M57 47 C50 26 30 6 12 9 C3 11 2 24 7 34 C13 46 34 54 57 52 Z" fill="#36315c"/>
+        <g stroke="#5d5890" stroke-width="1.6" fill="none" stroke-linecap="round">
+          <path d="M52 45 L17 16"/><path d="M52 47 L9 29"/><path d="M53 49 L14 41"/>
         </g>
-        <g fill="none" stroke="#ff7eb6" stroke-width="2">
-          <ellipse cx="50" cy="50" rx="36" ry="10"/>
-          <ellipse cx="50" cy="50" rx="36" ry="10" transform="rotate(60 50 50)"/>
-          <ellipse cx="50" cy="50" rx="36" ry="10" transform="rotate(120 50 50)"/>
+        <ellipse cx="48" cy="46" rx="8.5" ry="4.6" transform="rotate(22 48 46)" fill="#ff5c7c" stroke="none"/>
+        <g fill="#fff" stroke="none"><circle cx="13" cy="15" r="1.9"/><circle cx="7.5" cy="24" r="1.9"/><circle cx="9" cy="33" r="1.9"/></g>
+      </g>
+      <symbol id="bf-wings" viewBox="0 0 120 112">
+        <use href="#bf-half"/>
+        <use href="#bf-half" transform="matrix(-1 0 0 1 120 0)"/>
+      </symbol>
+      <symbol id="bf-body" viewBox="0 0 120 112">
+        <g fill="none" stroke="#2b2540" stroke-width="2.6" stroke-linecap="round">
+          <path d="M55 28 C52 17 46 11 40 11"/><path d="M65 28 C68 17 74 11 80 11"/>
         </g>
-        <circle cx="50" cy="50" r="13" fill="#ffd23f" stroke="#2b2540" stroke-width="3.5"/>
-        <circle cx="94" cy="50" r="5.5" fill="#4f8cff" stroke="#2b2540" stroke-width="2.5"/>
-        <circle cx="28" cy="88" r="5.5" fill="#3ccf9e" stroke="#2b2540" stroke-width="2.5"/>
-        <circle cx="28" cy="12" r="5.5" fill="#ff7a59" stroke="#2b2540" stroke-width="2.5"/>
+        <circle cx="39" cy="11" r="4.2" fill="#ff7eb6" stroke="#2b2540" stroke-width="2"/>
+        <circle cx="81" cy="11" r="4.2" fill="#ff7eb6" stroke="#2b2540" stroke-width="2"/>
+        <ellipse cx="60" cy="68" rx="7" ry="24" fill="#3a3354" stroke="#2b2540" stroke-width="3"/>
+        <g stroke="#ff7eb6" stroke-width="2" stroke-linecap="round"><path d="M56 70 H64"/><path d="M56.5 78 H63.5"/><path d="M57.5 86 H62.5"/></g>
+        <circle cx="60" cy="39" r="13.5" fill="#3a3354" stroke="#2b2540" stroke-width="3"/>
+        <ellipse cx="54.5" cy="38" rx="4.4" ry="5" fill="#fff"/><ellipse cx="65.5" cy="38" rx="4.4" ry="5" fill="#fff"/>
+        <circle cx="55.2" cy="39" r="2.7" fill="#2b2540"/><circle cx="66.2" cy="39" r="2.7" fill="#2b2540"/>
+        <circle cx="56.2" cy="37.6" r="1.1" fill="#fff"/><circle cx="67.2" cy="37.6" r="1.1" fill="#fff"/>
+        <ellipse cx="50.5" cy="45" rx="3.2" ry="1.9" fill="#ff7eb6"/><ellipse cx="69.5" cy="45" rx="3.2" ry="1.9" fill="#ff7eb6"/>
+        <path d="M57 45.5 Q60 48.5 63 45.5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
       </symbol>
     </defs>
   </svg>
@@ -208,13 +236,13 @@
   <div class="wrap">
     <header>
       <div class="nav">
-        <div class="logo"><svg aria-hidden="true"><use href="#atom-flower"/></svg>小朵兒的理化教室</div>
+        <div class="logo"><svg class="bf" viewBox="0 0 120 112" aria-hidden="true"><use class="wing" href="#bf-wings"/><use href="#bf-body"/></svg>小朵兒的理化教室</div>
         <small>爸爸做給小朵兒的專屬教材</small>
       </div>
 
       <div class="hero">
         <div>
-          <span class="hello">🌸 嗨，小朵兒</span>
+          <span class="hello">🦋 嗨，小朵兒</span>
           <h1><span class="nick">小朵兒</span>，<br>一起把<span class="hl">理化</span><br>變成好玩的事！</h1>
           <div class="nameplate"><span class="k">專屬</span><span class="v">小朵兒</span></div>
           <p>從生活裡的小現象出發，一步一步看懂物理和化學。不懂的地方，隨時回來複習就好。</p>
@@ -228,9 +256,13 @@
             </div>
             <figcaption>小朵兒 ✨<small>未來的小科學家</small></figcaption>
           </figure>
-          <div class="sticker s1" aria-hidden="true"><svg><use href="#atom-flower"/></svg></div>
-          <div class="sticker s2" aria-hidden="true"><svg><use href="#atom-flower"/></svg></div>
-          <div class="sticker s3" aria-hidden="true"><svg><use href="#atom-flower"/></svg></div>
+          <!-- 大鳳蝶飛過留下的虛線 -->
+          <svg class="trail" viewBox="0 0 300 340" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M40 330 C10 260 120 250 90 190 C60 130 -10 150 30 90" fill="none" stroke="#ff7eb6" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round"/>
+          </svg>
+          <div class="sticker s1" aria-hidden="true"><svg class="bf" viewBox="0 0 120 112"><use class="wing" href="#bf-wings"/><use href="#bf-body"/></svg></div>
+          <div class="sticker s2" aria-hidden="true"><svg class="bf" viewBox="0 0 120 112"><use class="wing" href="#bf-wings"/><use href="#bf-body"/></svg></div>
+          <div class="sticker s3" aria-hidden="true"><svg class="bf" viewBox="0 0 120 112"><use class="wing" href="#bf-wings"/><use href="#bf-body"/></svg></div>
         </div>
       </div>
     </header>

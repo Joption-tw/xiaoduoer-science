@@ -184,12 +184,73 @@
     .modes { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 560px) {
-    canvas { height: 360px; }
     .mode { padding: 8px 10px; }
     .mode small { display: none; }
     .opts { grid-template-columns: 1fr; }
-    .sim { padding: 10px; }
   }
+  button, .opt, .mode, .legend li { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+  /* 手機直拿：畫布下面馬上看到結果（正倒、大小、實虛），拖拉時不用往下捲 */
+  @media (max-width: 700px) and (orientation: portrait) {
+    .sim { display: flex; flex-direction: column; gap: 10px; padding: 10px; border-radius: 20px; }
+    .stage, .panel { display: contents; }
+    canvas { order: 1; height: clamp(260px, 82vw, 360px); }
+    .box-pos { order: 2; display: flex; align-items: baseline; gap: 10px; padding: 8px 12px; }
+    .box-pos h3 { margin: 0; font-size: .85rem; }
+    .pos { font-size: 1.15rem; }
+    .badges { order: 3; }
+    .badge { padding: 6px 2px; font-size: 1rem; }
+    .controls { order: 4; margin-top: 0; gap: 8px 12px; }
+    .slider input { width: 110px; }
+    .legend { order: 5; margin-top: 0; }
+    .legend li { font-size: .9rem; padding: 6px 10px; }
+    .hint { order: 6; margin: 0 2px; font-size: .85rem; }
+    .box-nums { order: 7; }
+    .tip { order: 8; }
+  }
+
+  /* 手機橫拿：整個動畫區剛好塞滿一個螢幕，左邊畫布、右邊結果 */
+  @media (orientation: landscape) and (max-height: 540px) {
+    header { padding-top: 10px; }
+    .title { margin-top: 10px; }
+    .title h1 { font-size: 1.6rem; }
+    .modes { grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+    .mode { padding: 6px 10px; box-shadow: 3px 3px 0 var(--line); }
+    .mode .em { font-size: 1.2rem; }
+    .mode b { font-size: 1rem; }
+    .mode small { display: none; }
+    /* 左邊畫布佔滿整個螢幕高；右邊由上到下：位置、正倒大小實虛、數字、按鈕 */
+    .sim { grid-template-columns: minmax(0, 1fr) 210px; grid-template-rows: auto auto auto 1fr auto;
+      gap: 8px 10px; padding: 8px; margin-top: 12px; border-radius: 18px; }
+    .stage, .panel { display: contents; }
+    canvas { grid-column: 1; grid-row: 1 / span 4; height: calc(100vh - 28px); height: calc(100dvh - 28px); min-height: 220px; border-radius: 12px; }
+    .box-pos { grid-column: 2; grid-row: 1; }
+    .badges { grid-column: 2; grid-row: 2; }
+    .box-nums { grid-column: 2; grid-row: 3; }
+    .controls { grid-column: 2; grid-row: 4; align-self: end; margin-top: 0; gap: 6px 8px; }
+    .legend { grid-column: 1 / -1; grid-row: 5; margin-top: 4px; }
+    .nums dt:nth-of-type(5), .nums dd:nth-of-type(5) { display: none; }
+    .hint, .tip { display: none; }
+    .controls .btn { padding: 3px 10px; font-size: .9rem; }
+    .slider, .switch { font-size: .9rem; }
+    .slider input { width: 120px; }
+    .box { padding: 7px 10px; border-radius: 12px; }
+    .box h3 { font-size: .78rem; margin: 0 0 2px; }
+    .pos { font-size: 1.05rem; }
+    .badges { gap: 6px; }
+    .badge { padding: 6px 2px; font-size: .98rem; border-radius: 10px; }
+    .badge small { display: none; }
+    .nums { font-size: .82rem; gap: 2px 8px; line-height: 1.45; }
+  }
+
+  /* 全螢幕（Android 等支援的瀏覽器） */
+  #sim:fullscreen { margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow: auto;
+    grid-template-columns: minmax(0, 1fr) 240px; align-content: start; }
+  #sim:fullscreen canvas { height: calc(100vh - 70px); }
+  #sim:fullscreen .hint, #sim:fullscreen .tip { display: none; }
+  #sim:-webkit-full-screen { margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow: auto;
+    grid-template-columns: minmax(0, 1fr) 240px; align-content: start; width: 100%; height: 100%; }
+  #sim:-webkit-full-screen canvas { height: calc(100vh - 70px); }
 </style>
 </head>
 <body>
@@ -242,7 +303,7 @@
 
   <div class="modes" id="modes"></div>
 
-  <div class="sim">
+  <div class="sim" id="sim">
     <div class="stage">
       <canvas id="cv" aria-label="成像模擬，可拖拉物體"></canvas>
       <p class="hint">👆 拖拉物體可以左右移動；抓住箭頭尖端上下拉可以改變物體高度。靠近 F、2F 時會自動「吸住」。</p>
@@ -251,12 +312,13 @@
         <button class="btn ghost" id="reset">↺ 重設</button>
         <label class="slider">焦距 <input type="range" id="fk" min="0.08" max="0.15" step="0.005" value="0.11"></label>
         <label class="switch"><input type="checkbox" id="flow" checked> 光點流動</label>
+        <button class="btn ghost" id="full" hidden>⛶ 全螢幕</button>
       </div>
       <ul class="legend" id="legend"></ul>
     </div>
 
     <div class="panel">
-      <div class="box">
+      <div class="box box-pos">
         <h3>物體位置</h3>
         <div class="pos" id="rPos">—</div>
       </div>
@@ -265,7 +327,7 @@
         <div class="badge" id="bSZ">—</div>
         <div class="badge" id="bRV">—</div>
       </div>
-      <div class="box">
+      <div class="box box-nums">
         <dl class="nums">
           <dt>物距</dt><dd id="rU">—</dd>
           <dt>像距</dt><dd id="rV">—</dd>
@@ -381,18 +443,35 @@ const S = { mode: 'cm', fk: 0.11, u: DEFAULT_U, hk: DEFAULT_H, rays: [true, true
 
 /* ===================== 畫布 ===================== */
 const cv = document.getElementById('cv');
-const ctx = cv.getContext('2d');
-let W = 0, H = 0, cx = 0, cy = 0;
+/* 為了手機順暢：畫面拆成兩張「預先畫好」的圖層，只有物體被移動時才重畫；
+   每一格動畫只需要貼上兩張圖層，再畫流動的光點。
+   底層 base：格線、區域、鏡子、光線；上層 top：物體、像、名牌、提示 */
+const mctx = cv.getContext('2d');
+const baseCv = document.createElement('canvas'), bctx = baseCv.getContext('2d');
+const topCv = document.createElement('canvas'), tctx = topCv.getContext('2d');
+let ctx = mctx;            // 繪圖函式畫在「目前的 ctx」上，重畫圖層時會暫時切換
+let W = 0, H = 0, cx = 0, cy = 0, DPR = 1;
+let needRender = true;     // 圖層要重畫
+let needPaint = true;      // 畫面要更新（光點關掉時，不動就不重畫）
 function resize() {
   const r = cv.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);   // 手機最多 2 倍解析度，夠清楚又省力
   W = r.width; H = r.height;
-  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (const [c, x] of [[cv, mctx], [baseCv, bctx], [topCv, tctx]]) {
+    c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
+    x.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
   cx = W / 2; cy = H / 2;
+  needRender = true;
 }
 new ResizeObserver(resize).observe(cv);
 resize();
+
+// 畫布捲出畫面外時暫停動畫，捲動頁面比較順、也省電
+let cvVisible = true;
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(es => { cvVisible = es[0].isIntersecting; }).observe(cv);
+}
 
 const toC = (x, y) => [cx + x, cy - y];
 
@@ -401,7 +480,7 @@ const toC = (x, y) => [cx + x, cy - y];
    v>0：實像（透鏡在另一側、面鏡在鏡前）；v<0：虛像 */
 function geom() {
   const md = MODES[S.mode];
-  const fa = Math.max(30, W * S.fk);
+  const fa = Math.max(30, W * S.fk * (W < 500 ? 1.35 : 1));   // 手機直拿畫布窄，焦距放大一點才不會擠在一起
   const f = fa * md.sign;
   const umax = (cx - 26) / fa;
   S.u = Math.min(Math.max(S.u, 0.2), umax);
@@ -485,6 +564,18 @@ function label(text, x, y, color, size = 14, align = 'center', weight = 700) {
   ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(251,253,255,.95)'; ctx.strokeText(text, x, y);
   ctx.fillStyle = color; ctx.fillText(text, x, y); ctx.restore();
 }
+// 線段落在方框內的長度（Liang–Barsky 裁切）
+function clipLen(a, b, x0, y0, x1, y1) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  let t0 = 0, t1 = 1;
+  for (const [p, q] of [[-dx, a[0] - x0], [dx, x1 - a[0]], [-dy, a[1] - y0], [dy, y1 - a[1]]]) {
+    if (p === 0) { if (q < 0) return 0; continue; }
+    const r = q / p;
+    if (p < 0) { if (r > t1) return 0; if (r > t0) t0 = r; }
+    else { if (r < t0) return 0; if (r < t1) t1 = r; }
+  }
+  return (t1 - t0) * Math.hypot(dx, dy);
+}
 // 小名牌：貼在箭頭尖端外側，白底不被光線蓋住
 // 會挑上、左上、右上（倒立時是下方）幾個位置裡，壓到光線最少的那個
 function tag(text, x, tipY, up, color, gap, segs) {
@@ -497,13 +588,7 @@ function tag(text, x, tipY, up, color, gap, segs) {
     const bx = Math.max(4, Math.min(W - w - 4, x + dx - w / 2));
     const by = Math.max(4, Math.min(H - h - 4, tipY + dy - h / 2));
     let hit = 0;
-    for (const [a, b] of segs) {
-      const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.min(800, Math.ceil(L / 4));
-      for (let j = 0; j <= n; j++) {
-        const px = a[0] + (b[0] - a[0]) * j / n, py = a[1] + (b[1] - a[1]) * j / n;
-        if (px > bx - 4 && px < bx + w + 4 && py > by - 4 && py < by + h + 4) hit++;
-      }
-    }
+    for (const [a, b] of segs) hit += clipLen(a, b, bx - 4, by - 4, bx + w + 4, by + h + 4) / 4;
     const score = hit * 10 + i;   // 一樣乾淨時，優先放正上方
     if (!best || score < best.score) best = { score, bx, by };
   });
@@ -541,7 +626,7 @@ function drawZones(g) {
 }
 
 function drawElement(g) {
-  const Hm = H * 0.45, sag = 11;
+  const Hm = Math.min(H * 0.45, H / 2 - 30), sag = 11;   // 畫布矮（手機橫拿）時，留位置給上方的名稱
   ctx.save();
   if (g.mirror) {
     const s = g.f > 0 ? -1 : 1; // 凹面鏡邊緣彎向物體
@@ -593,7 +678,7 @@ function drawMarks(g) {
   if (g.mirror && g.f < 0) label('（鏡後）', cx + 1.5 * fa, cy + 38, '#9a94ad', 12, 'center', 500);
 }
 
-function drawRays(rays, time) {
+function drawRays(rays) {
   for (const r of rays) {
     const c = COLORS[r.id];
     for (const [a, b] of r.dashed) line(a, b, c, 1.6, [6, 5]);
@@ -613,24 +698,41 @@ function drawRays(rays, time) {
       const k = Math.min(L2 * 0.45, 90) / L2;
       head(r.Pc[0] + (r.Ec[0] - r.Pc[0]) * k, r.Pc[1] + (r.Ec[1] - r.Pc[1]) * k, Math.atan2(r.Ec[1] - r.Pc[1], r.Ec[0] - r.Pc[0]), c);
     }
-    // 光點流動
-    if (S.flow) {
-      const L = Math.min(L1, 2500) + L2, gap = 70, speed = 45;
-      for (let s = (time * speed) % gap; s < L; s += gap) {
-        let x, y;
-        if (s < L1) { const k = s / L1; x = r.Oc[0] + (r.Pc[0] - r.Oc[0]) * k; y = r.Oc[1] + (r.Pc[1] - r.Oc[1]) * k; }
-        else { const k = (s - L1) / L2; x = r.Pc[0] + (r.Ec[0] - r.Pc[0]) * k; y = r.Pc[1] + (r.Ec[1] - r.Pc[1]) * k; }
-        if (x < -5 || x > W + 5 || y < -5 || y > H + 5) continue;
-        ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = c; ctx.lineWidth = 2.5;
-        ctx.shadowColor = c; ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.arc(x, y, 3.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
-      }
-    }
   }
 }
 
-function draw(time) {
+// 光點流動：每條光線的光點一次畫完（不用 shadowBlur，手機上才不會卡）
+function drawDots(rays, time) {
+  const gap = 70, speed = 45;
+  for (const r of rays) {
+    const c = COLORS[r.id];
+    const L1 = Math.hypot(r.Pc[0] - r.Oc[0], r.Pc[1] - r.Oc[1]);
+    const L2 = Math.hypot(r.Ec[0] - r.Pc[0], r.Ec[1] - r.Pc[1]);
+    const L = L1 + L2, pts = [];
+    for (let s = (time * speed) % gap; s < L; s += gap) {
+      let x, y;
+      if (s < L1) { const k = s / L1; x = r.Oc[0] + (r.Pc[0] - r.Oc[0]) * k; y = r.Oc[1] + (r.Pc[1] - r.Oc[1]) * k; }
+      else { const k = (s - L1) / L2; x = r.Pc[0] + (r.Ec[0] - r.Pc[0]) * k; y = r.Pc[1] + (r.Ec[1] - r.Pc[1]) * k; }
+      if (x < -8 || x > W + 8 || y < -8 || y > H + 8) continue;
+      pts.push(x, y);
+    }
+    if (!pts.length) continue;
+    ctx.save();
+    ctx.globalAlpha = 0.28; ctx.fillStyle = c; ctx.beginPath();
+    for (let i = 0; i < pts.length; i += 2) { ctx.moveTo(pts[i] + 7.5, pts[i + 1]); ctx.arc(pts[i], pts[i + 1], 7.5, 0, Math.PI * 2); }
+    ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let i = 0; i < pts.length; i += 2) { ctx.moveTo(pts[i] + 3.6, pts[i + 1]); ctx.arc(pts[i], pts[i + 1], 3.6, 0, Math.PI * 2); }
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* 重畫兩張圖層（物體、模式、焦距…有變才會跑） */
+let curRays = [];
+function render() {
   const g = geom();
+  ctx = bctx;
   ctx.clearRect(0, 0, W, H);
 
   // 格線
@@ -646,8 +748,11 @@ function draw(time) {
   drawMarks(g);
 
   const rays = buildRays(g);
-  drawRays(rays, time);
+  drawRays(rays);
+  curRays = rays;
 
+  ctx = tctx;
+  ctx.clearRect(0, 0, W, H);
   // 物體
   const [ox, oy] = toC(-g.u, g.h);
   vArrow(ox, cy, oy, OBJ, 5, false);
@@ -684,9 +789,22 @@ function draw(time) {
     ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(note, W / 2, y + 15);
     ctx.restore();
   }
-
+  ctx = mctx;
   updatePanel(g);
 }
+
+/* 每一格：貼底層 → 畫光點 → 貼上層 */
+function paint(time) {
+  ctx = mctx;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(baseCv, 0, 0);
+  ctx.restore();
+  if (S.flow) drawDots(curRays, time);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(topCv, 0, 0); ctx.restore();
+}
+// 測試或除錯時可以直接呼叫 draw()
+function draw(time) { render(); paint(time || 0); }
 
 /* ===================== 結果面板 ===================== */
 const $ = id => document.getElementById(id);
@@ -763,7 +881,7 @@ $('legend').addEventListener('click', e => {
   const i = +li.dataset.i; S.rays[i] = !S.rays[i]; renderLegend();
 });
 $('fk').addEventListener('input', e => { S.fk = +e.target.value; lastSig = ''; });
-$('flow').addEventListener('change', e => { S.flow = e.target.checked; });
+$('flow').addEventListener('change', e => { S.flow = e.target.checked; needPaint = true; });
 $('reset').addEventListener('click', () => {
   stopPlay(); S.u = DEFAULT_U; S.hk = DEFAULT_H; S.fk = 0.11; $('fk').value = 0.11; S.rays = [true, true, true]; renderLegend(); lastSig = '';
 });
@@ -785,7 +903,7 @@ cv.addEventListener('pointerdown', e => {
   const p = pt(e);
   if (p.x > cx - 8) return;
   const g = geom(); const [ox, oy] = toC(-g.u, g.h);
-  drag = { top: Math.hypot(p.x - ox, p.y - oy) < 28 };
+  drag = { top: Math.hypot(p.x - ox, p.y - oy) < (e.pointerType === 'touch' ? 40 : 28) };   // 手指比較粗，判定範圍放大
   e.preventDefault();
   stopPlay(); moveTo(p);
   cv.classList.add('dragging');
@@ -808,12 +926,40 @@ function frame(now) {
     S.u -= dt * 0.38;
     if (S.u <= 0.3) { S.u = 0.3; stopPlay(); }
   }
-  if (W > 0) draw(now / 1000);
+  if (W > 0 && cvVisible && !document.hidden) {
+    const sig = S.mode + '|' + S.u + '|' + S.hk + '|' + S.fk + '|' + S.rays.join() + '|' + W + '|' + H;
+    if (needRender || sig !== lastRenderSig) { render(); lastRenderSig = sig; needRender = false; needPaint = true; }
+    if (S.flow || needPaint) { paint(now / 1000); needPaint = false; }
+  }
   requestAnimationFrame(frame);
 }
+let lastRenderSig = '';
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { needRender = true; });
 
 setMode('cm');
 requestAnimationFrame(frame);
+
+/* 手機轉成橫向時，自動捲到動畫區，整個畫面就是動畫 */
+const landscapeMQ = matchMedia('(orientation: landscape) and (max-height: 540px)');
+const toSim = () => { if (landscapeMQ.matches) setTimeout(() => $('sim').scrollIntoView({ block: 'start', behavior: 'smooth' }), 350); };
+if (landscapeMQ.addEventListener) landscapeMQ.addEventListener('change', toSim); else landscapeMQ.addListener(toSim);
+
+/* 全螢幕按鈕：瀏覽器支援才顯示（iPhone 的 Safari 不支援，改用橫向排版） */
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+  const fb = $('full'); fb.hidden = false;
+  fb.addEventListener('click', async () => {
+    try {
+      if (fsEl()) { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      const el = $('sim');
+      await (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      try { await screen.orientation.lock('landscape'); } catch (e) { /* 不能鎖方向就算了 */ }
+    } catch (e) { /* 不支援就維持原樣 */ }
+  });
+  const onFs = () => { fb.textContent = fsEl() ? '✕ 離開全螢幕' : '⛶ 全螢幕'; needRender = true; };
+  document.addEventListener('fullscreenchange', onFs);
+  document.addEventListener('webkitfullscreenchange', onFs);
+}
 
 /* ===================== 小測驗 ===================== */
 const QUIZ = [

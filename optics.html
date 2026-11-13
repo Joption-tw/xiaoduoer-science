@@ -463,12 +463,28 @@ function label(text, x, y, color, size = 14, align = 'center', weight = 700) {
   ctx.fillStyle = color; ctx.fillText(text, x, y); ctx.restore();
 }
 // 小名牌：貼在箭頭尖端外側，白底不被光線蓋住
-function tag(text, x, tipY, up, color, gap) {
+// 會挑上、左上、右上（倒立時是下方）幾個位置裡，壓到光線最少的那個
+function tag(text, x, tipY, up, color, gap, segs) {
   ctx.save(); ctx.font = `900 14px ${FONT}`;
-  const w = ctx.measureText(text).width + 16, h = 22;
-  let y = up ? tipY - gap - h : tipY + gap;
-  y = Math.max(4, Math.min(H - h - 4, y));
-  const bx = Math.max(4, Math.min(W - w - 4, x - w / 2));
+  const w = ctx.measureText(text).width + 16, h = 22, s = up ? -1 : 1;
+  const side = w / 2 + gap;
+  const cands = [[0, s * (gap + h / 2)], [-side, s * (gap * 0.6 + h / 2)], [side, s * (gap * 0.6 + h / 2)], [-side - 6, 0], [side + 6, 0]];
+  let best = null;
+  cands.forEach(([dx, dy], i) => {
+    const bx = Math.max(4, Math.min(W - w - 4, x + dx - w / 2));
+    const by = Math.max(4, Math.min(H - h - 4, tipY + dy - h / 2));
+    let hit = 0;
+    for (const [a, b] of segs) {
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.min(800, Math.ceil(L / 4));
+      for (let j = 0; j <= n; j++) {
+        const px = a[0] + (b[0] - a[0]) * j / n, py = a[1] + (b[1] - a[1]) * j / n;
+        if (px > bx - 4 && px < bx + w + 4 && py > by - 4 && py < by + h + 4) hit++;
+      }
+    }
+    const score = hit * 10 + i;   // 一樣乾淨時，優先放正上方
+    if (!best || score < best.score) best = { score, bx, by };
+  });
+  const bx = best.bx, y = best.by;
   ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(bx, y, w, h, 11); ctx.fill(); ctx.stroke();
   ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -479,8 +495,9 @@ function vArrow(x, y0, y1, color, w, dashed) {
   const dir = y1 < y0 ? -1 : 1;
   ctx.save();
   if (dashed) { ctx.globalAlpha = 0.85; }
-  line([x, y0], [x, y1 - dir * 10], color, w, dashed ? [7, 5] : null);
-  head(x, y1, dir < 0 ? -Math.PI / 2 : Math.PI / 2, color, 13);
+  // 箭頭最尖的那一點剛好落在 y1（光線就從這裡出發／交會）
+  line([x, y0], [x, y1 - dir * 14], color, w, dashed ? [7, 5] : null);
+  head(x, y1 - dir * 13, dir < 0 ? -Math.PI / 2 : Math.PI / 2, color, 13);
   ctx.restore();
 }
 
@@ -613,7 +630,7 @@ function draw(time) {
   vArrow(ox, cy, oy, OBJ, 5, false);
   ctx.save(); ctx.strokeStyle = OBJ; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.arc(ox, oy, 14, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-  const tags = [['物體', ox, oy, oy <= cy, OBJ, 16]];
+  const tags = [['物體', ox, oy, oy <= cy, OBJ, 26]];
 
   // 像
   let note = '';
@@ -623,7 +640,7 @@ function draw(time) {
     const real = g.v > 0;
     if (ix > -2 && ix < W + 2) {
       vArrow(ix, cy, iy, IMG, 5, !real);
-      tags.push([real ? '實像' : '虛像', ix, iy, iy <= cy, IMG, 3]);
+      tags.push([real ? '實像' : '虛像', ix, iy, iy <= cy, IMG, 16]);
       if (iy < -10 || iy > H + 10) note = '像太大了，超出畫面上下 ↕';
     } else {
       note = ix < 0 ? '← 像在很遠的左邊（畫面外）' : '像在很遠的右邊（畫面外）→';
@@ -631,7 +648,10 @@ function draw(time) {
   } else {
     note = '光線互相平行，永遠不會交會 → 不成像';
   }
-  for (const t of tags) tag(...t);   // 名牌最後畫，永遠在最上層
+  const segs = [[[ox, cy], [ox, oy]]];
+  for (const r of rays) { segs.push([r.Oc, r.Pc], [r.Pc, r.Ec], ...r.dashed); }
+  for (const t of tags) if (t[0] !== '物體') segs.push([[t[1], cy], [t[1], t[2]]]);
+  for (const t of tags) tag(...t, segs);   // 名牌最後畫，永遠在最上層
   if (note) {
     ctx.save(); ctx.font = `700 14px ${FONT}`;
     const w = ctx.measureText(note).width + 24;

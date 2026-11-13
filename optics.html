@@ -404,10 +404,10 @@ const MODES = {
 };
 
 const RULES = {
-  cm: ['平行主軸入射 → 反射後通過焦點 F', '通過球心 C 入射 → 沿原路反射回來', '通過焦點 F 入射 → 反射後平行主軸'],
-  vm: ['平行主軸入射 → 反射後，延長線通過鏡後焦點 F', '射向鏡後球心 C → 沿原路反射回來', '射向鏡後焦點 F → 反射後平行主軸'],
-  vl: ['平行主軸入射 → 折射後通過另一側焦點 F', '通過光心 → 直線前進，不偏折', '通過焦點 F 入射 → 折射後平行主軸'],
-  cl: ['平行主軸入射 → 折射後，延長線通過同側焦點 F', '通過光心 → 直線前進，不偏折', '射向另一側焦點 F → 折射後平行主軸'],
+  cm: ['平行主軸入射 → 反射後通過焦點 F', '通過焦點 F 入射 → 反射後平行主軸', '通過球心 C 入射 → 沿原路反射回來'],
+  vm: ['平行主軸入射 → 反射後，延長線通過鏡後焦點 F', '射向鏡後焦點 F → 反射後平行主軸', '射向鏡後球心 C → 沿原路反射回來'],
+  vl: ['平行主軸入射 → 折射後通過另一側焦點 F', '通過焦點 F 入射 → 折射後平行主軸', '通過光心 → 直線前進，不偏折'],
+  cl: ['平行主軸入射 → 折射後，延長線通過同側焦點 F', '射向另一側焦點 F → 折射後平行主軸', '通過光心 → 直線前進，不偏折'],
 };
 
 const TABLE = {
@@ -439,7 +439,7 @@ const FONT = '"Noto Sans TC", "Microsoft JhengHei", sans-serif';
 
 /* ===================== 狀態 ===================== */
 const DEFAULT_U = 2.6, DEFAULT_H = 0.45;
-const S = { mode: 'cm', fk: 0.11, u: DEFAULT_U, hk: DEFAULT_H, rays: [true, true, true], flow: true, playing: false };
+const S = { mode: 'cm', fk: 0.11, u: DEFAULT_U, hk: DEFAULT_H, rays: [true, true, false], flow: true, playing: false };
 
 /* ===================== 畫布 ===================== */
 const cv = document.getElementById('cv');
@@ -516,9 +516,9 @@ function buildRays(g) {
   const I = v !== null ? [v, m * h] : null;
   const flip = p => mirror ? [-p[0], p[1]] : p;
   const defs = [{ id: 0, yP: h }];
-  if (mirror) { const d = u - 2 * f; if (Math.abs(d) > 0.5) defs.push({ id: 1, yP: -2 * f * h / d }); }
-  else defs.push({ id: 1, yP: 0 });
-  if (key !== 'f') defs.push({ id: 2, yP: -h * f / (u - f) });
+  if (mirror) { const d = u - 2 * f; if (Math.abs(d) > 0.5) defs.push({ id: 2, yP: -2 * f * h / d }); }
+  else defs.push({ id: 2, yP: 0 });
+  if (key !== 'f') defs.push({ id: 1, yP: -h * f / (u - f) });
 
   const out = [];
   for (const r of defs) {
@@ -533,11 +533,11 @@ function buildRays(g) {
     const dashed = [];
     if (I && v < 0) dashed.push([Pc, toC(...flip(I))]);
     if (r.id === 0 && f < 0) dashed.push([Pc, toC(...flip([f, 0]))]);
-    if (r.id === 2) {
+    if (r.id === 1) {   // ② 通過焦點的光線
       if (f > 0 && u < f) dashed.push([toC(-f, 0), Oc]);
       if (f < 0) dashed.push([Pc, toC(-f, 0)]);
     }
-    if (r.id === 1 && mirror) {
+    if (r.id === 2 && mirror) {   // ③ 通過球心的光線
       if (f > 0 && u < 2 * f) dashed.push([toC(-2 * f, 0), Oc]);
       if (f < 0) dashed.push([Pc, toC(-2 * f, 0)]);
     }
@@ -883,7 +883,7 @@ $('legend').addEventListener('click', e => {
 $('fk').addEventListener('input', e => { S.fk = +e.target.value; lastSig = ''; });
 $('flow').addEventListener('change', e => { S.flow = e.target.checked; needPaint = true; });
 $('reset').addEventListener('click', () => {
-  stopPlay(); S.u = DEFAULT_U; S.hk = DEFAULT_H; S.fk = 0.11; $('fk').value = 0.11; S.rays = [true, true, true]; renderLegend(); lastSig = '';
+  stopPlay(); S.u = DEFAULT_U; S.hk = DEFAULT_H; S.fk = 0.11; $('fk').value = 0.11; S.rays = [true, true, false]; renderLegend(); lastSig = '';
 });
 function stopPlay() { S.playing = false; $('play').textContent = '▶ 自動播放'; }
 $('play').addEventListener('click', () => {

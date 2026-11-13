@@ -462,6 +462,19 @@ function label(text, x, y, color, size = 14, align = 'center', weight = 700) {
   ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(251,253,255,.95)'; ctx.strokeText(text, x, y);
   ctx.fillStyle = color; ctx.fillText(text, x, y); ctx.restore();
 }
+// 小名牌：貼在箭頭尖端外側，白底不被光線蓋住
+function tag(text, x, tipY, up, color, gap) {
+  ctx.save(); ctx.font = `900 14px ${FONT}`;
+  const w = ctx.measureText(text).width + 16, h = 22;
+  let y = up ? tipY - gap - h : tipY + gap;
+  y = Math.max(4, Math.min(H - h - 4, y));
+  const bx = Math.max(4, Math.min(W - w - 4, x - w / 2));
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(bx, y, w, h, 11); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, bx + w / 2, y + h / 2 + 1);
+  ctx.restore();
+}
 function vArrow(x, y0, y1, color, w, dashed) {
   const dir = y1 < y0 ? -1 : 1;
   ctx.save();
@@ -600,7 +613,7 @@ function draw(time) {
   vArrow(ox, cy, oy, OBJ, 5, false);
   ctx.save(); ctx.strokeStyle = OBJ; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.arc(ox, oy, 14, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-  label('物體', ox, oy - 26, OBJ, 15, 'center', 900);
+  const tags = [['物體', ox, oy, oy <= cy, OBJ, 16]];
 
   // 像
   let note = '';
@@ -610,8 +623,7 @@ function draw(time) {
     const real = g.v > 0;
     if (ix > -2 && ix < W + 2) {
       vArrow(ix, cy, iy, IMG, 5, !real);
-      const ly = iy < cy ? Math.max(14, iy - 24) : Math.min(H - 34, iy + 24);
-      label(real ? '實像' : '虛像', ix, ly, IMG, 15, 'center', 900);
+      tags.push([real ? '實像' : '虛像', ix, iy, iy <= cy, IMG, 3]);
       if (iy < -10 || iy > H + 10) note = '像太大了，超出畫面上下 ↕';
     } else {
       note = ix < 0 ? '← 像在很遠的左邊（畫面外）' : '像在很遠的右邊（畫面外）→';
@@ -619,6 +631,7 @@ function draw(time) {
   } else {
     note = '光線互相平行，永遠不會交會 → 不成像';
   }
+  for (const t of tags) tag(...t);   // 名牌最後畫，永遠在最上層
   if (note) {
     ctx.save(); ctx.font = `700 14px ${FONT}`;
     const w = ctx.measureText(note).width + 24;

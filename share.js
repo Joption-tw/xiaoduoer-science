@@ -1,4 +1,4 @@
-/* 每一頁共用的分享列：在頁面放 <div data-share></div>，再載入這支檔案就會出現
+/* 每一頁共用的分享列：在頁面最上面（header 下方）放 <div data-share data-compact></div>，再載入這支檔案就會出現
    「分享這一頁 / LINE / 複製連結」三顆按鈕。分享的是目前這一頁的網址和標題。 */
 (function () {
   const css = `
@@ -15,6 +15,12 @@
   .share-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #2b2540; }
   .share-btn:focus-visible { outline: 3px solid #ff7eb6; outline-offset: 3px; }
   .share-btn.line { background: #5fc663; color: #fff; }
+  /* 放在頁面最上面的精簡版：提示文字和按鈕排同一行 */
+  .share-bar.compact { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px 14px; margin-top: 16px; }
+  .share-bar.compact .share-hint { font-size: .9rem; }
+  .share-bar.compact .share-row { gap: 10px; }
+  .share-bar.compact .share-btn { font-size: .92rem; padding: 6px 16px; box-shadow: 3px 3px 0 #2b2540; }
+  @media (max-width: 560px) { .share-bar.compact .share-hint { width: 100%; text-align: center; } }
   .share-toast {
     position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); z-index: 50;
     transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
@@ -59,8 +65,9 @@
 
   document.querySelectorAll('[data-share]').forEach(box => {
     box.classList.add('share-bar');
+    if (box.hasAttribute('data-compact')) box.classList.add('compact');
     box.innerHTML = `
-      <p class="share-hint">${box.dataset.share || '覺得好用？分享給同學一起學！'}</p>
+      <p class="share-hint">${box.dataset.share || '📣 覺得好用？分享給同學一起學！'}</p>
       <div class="share-row">
         <button type="button" class="share-btn" data-act="share">分享這一頁</button>
         <a class="share-btn line" target="_blank" rel="noopener">LINE</a>

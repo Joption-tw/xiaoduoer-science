@@ -328,6 +328,7 @@
     <div class="score" id="score" style="margin-top:16px">得分：0 / 0</div>
   </section>
 
+  <div data-share></div>
   <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
 </div>
 
@@ -840,5 +841,6 @@ $('quiz').addEventListener('click', e => {
   $('score').textContent = `得分：${correct} / ${answered}` + (answered === QUIZ.length ? (correct === QUIZ.length ? '　🎉 全對！太厲害了！' : '　💪 錯的再看一次表格就會了！') : '');
 });
 </script>
+<script src="share.js"></script>
 </body>
 </html>

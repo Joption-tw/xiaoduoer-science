@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<!-- 「遠端互動白板教學」分享圖原稿：1200×630。改完用 python og/render.py 重新產生 live.png -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#2b2540; --pink:#ff7eb6; --pink-soft:#ffe0ee; --sun:#ffd23f; --phy:#4f8cff; --mint:#3ccf9e; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #fff8ef; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: var(--ink);
+    background-image: radial-gradient(#f1e3cf 2px, transparent 2px); background-size: 28px 28px; }
+  .card { position: absolute; inset: 36px 44px 46px 36px; background: #fff; border: 5px solid var(--ink); border-radius: 40px;
+    box-shadow: 10px 10px 0 var(--ink); overflow: hidden; }
+  .card::before { content: ""; position: absolute; right: -150px; top: -170px; width: 620px; height: 620px; border-radius: 50%; background: var(--pink-soft); }
+  .left { position: absolute; left: 56px; top: 50px; width: 520px; }
+  .pill { display: inline-block; background: var(--pink); color: #fff; font-weight: 900; font-size: 26px; padding: 5px 22px;
+    border: 3px solid var(--ink); border-radius: 999px; transform: rotate(-2deg); box-shadow: 3px 3px 0 var(--ink); }
+  h1 { font-size: 84px; font-weight: 900; line-height: 1.14; margin-top: 22px; letter-spacing: 1px; }
+  h1 .hl { background: linear-gradient(transparent 60%, var(--sun) 60%); padding: 0 6px; }
+  .sub { font-size: 30px; font-weight: 700; color: #6d6782; margin-top: 16px; line-height: 1.45; }
+  .sub b { color: #d6337a; }
+  .chips { display: flex; gap: 10px; margin-top: 26px; }
+  .chip { font-size: 21px; font-weight: 900; padding: 5px 12px; white-space: nowrap; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); }
+  .c1 { background: #e3edff; } .c2 { background: #fff3c4; } .c3 { background: #e4f9ef; }
+
+  /* 右邊：老師的電腦 → 學生的手機 */
+  .laptop { position: absolute; left: 578px; top: 76px; width: 400px; }
+  .screen { width: 400px; height: 262px; background: #fff; border: 5px solid var(--ink); border-radius: 18px 18px 6px 6px; padding: 10px; box-shadow: 6px 6px 0 rgba(43,37,64,.25); }
+  .base { width: 456px; height: 22px; margin-left: -28px; background: #d9dcef; border: 5px solid var(--ink); border-top: 0; border-radius: 0 0 22px 22px; }
+  .phone { position: absolute; left: 990px; top: 262px; width: 160px; height: 290px; background: #fff; border: 5px solid var(--ink); border-radius: 28px; padding: 26px 8px 10px; box-shadow: 6px 6px 0 rgba(43,37,64,.25); }
+  .phone::before { content: ""; position: absolute; left: 50%; top: 9px; width: 46px; height: 7px; margin-left: -23px; border-radius: 9px; background: var(--ink); }
+  .tag { position: absolute; font-size: 22px; font-weight: 900; padding: 3px 14px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; box-shadow: 3px 3px 0 var(--ink); white-space: nowrap; }
+  .t1 { left: 590px; top: 30px; transform: rotate(-3deg); }
+  .t2 { left: 1000px; top: 548px; transform: rotate(2deg); background: var(--sun); }
+  .sync { position: absolute; left: 860px; top: 400px; width: 130px; height: 120px; }
+  .sync-t { position: absolute; left: 790px; top: 488px; font-size: 24px; font-weight: 900; color: #d6337a; transform: rotate(-6deg); }
+  .bf { position: absolute; display: block; filter: drop-shadow(4px 4px 0 rgba(43,37,64,.3)); }
+  .b1 { width: 110px; height: 103px; left: 1030px; top: 70px; transform: rotate(14deg); }
+  .b2 { width: 80px; height: 75px; left: 640px; top: 420px; transform: rotate(-12deg); }
+  .mini { display: flex; gap: 6px; margin-top: 8px; }
+  .mini span { font-size: 12px; font-weight: 900; border: 2px solid var(--ink); border-radius: 8px; padding: 1px 8px; }
+</style></head>
+<body>
+  <!--BF_DEFS-->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <!-- 凸透鏡作圖（老師、學生畫面共用） -->
+      <symbol id="scene" viewBox="0 0 400 220">
+        <rect width="400" height="220" rx="10" fill="#fbfdff"/>
+        <g stroke="#eef0fb" stroke-width="1">
+          <path d="M0 40H400M0 80H400M0 160H400M0 200H400M50 0V220M100 0V220M150 0V220M250 0V220M300 0V220M350 0V220"/>
+        </g>
+        <line x1="10" y1="120" x2="390" y2="120" stroke="#b9b3cc" stroke-width="2" stroke-dasharray="7 5"/>
+        <ellipse cx="200" cy="120" rx="12" ry="96" fill="rgba(79,140,255,.18)" stroke="#4f8cff" stroke-width="3"/>
+        <g fill="#2b2540" font-family="Noto Sans TC" font-weight="900" font-size="14">
+          <circle cx="130" cy="120" r="4"/><text x="124" y="142">F</text>
+          <circle cx="270" cy="120" r="4"/><text x="264" y="142">F</text>
+          <circle cx="60" cy="120" r="4"/><text x="48" y="142">2F</text>
+          <circle cx="340" cy="120" r="4"/><text x="328" y="142">2F</text>
+        </g>
+        <line x1="90" y1="120" x2="90" y2="72" stroke="#8b5cf6" stroke-width="6"/><path d="M80 78 L90 60 L100 78Z" fill="#8b5cf6"/>
+        <path d="M90 62 L200 62 L360 196" fill="none" stroke="#ff4d6d" stroke-width="3.5"/>
+        <path d="M90 62 L360 196" fill="none" stroke="#20b07a" stroke-width="3.5"/>
+        <line x1="310" y1="120" x2="310" y2="170" stroke="#ff8c1a" stroke-width="6"/><path d="M300 164 L310 182 L320 164Z" fill="#ff8c1a"/>
+      </symbol>
+    </defs>
+  </svg>
+  <div class="card">
+    <div class="left">
+      <span class="pill">新功能 · 遠端上課</span>
+      <h1>遠端互動<br><span class="hl">白板教學</span></h1>
+      <p class="sub">老師在電腦上講解、畫重點，<br>學生的手機<b>畫面同步跟著動</b>！</p>
+      <div class="chips"><span class="chip c1">畫面同步</span><span class="chip c2">直接寫字畫圈</span><span class="chip c3">免安裝免註冊</span></div>
+    </div>
+  </div>
+
+  <span class="tag t1">💻 老師的電腦</span>
+  <div class="laptop">
+    <div class="screen">
+      <svg viewBox="0 0 400 220" width="370" height="204"><use href="#scene"/>
+        <!-- 老師用畫筆圈起來的「實像」 -->
+        <path d="M282 150 C 280 118 340 112 344 146 C 348 182 300 196 286 176 C 278 164 284 150 296 146" fill="none" stroke="#ff4d6d" stroke-width="4" stroke-linecap="round"/>
+        <text x="300" y="210" font-family="Noto Sans TC" font-weight="900" font-size="15" fill="#ff4d6d">倒立實像！</text>
+        <circle cx="200" cy="62" r="9" fill="rgba(255,40,80,.25)"/><circle cx="200" cy="62" r="4.5" fill="#ff2850"/>
+      </svg>
+      <div class="mini"><span style="background:#ffe0ee">✏️ 筆</span><span>🔴 雷射筆</span><span>📡 上課中</span></div>
+    </div>
+    <div class="base"></div>
+  </div>
+
+  <svg class="sync" viewBox="0 0 130 120"><path d="M8 20 C 60 10 100 40 110 96" fill="none" stroke="#ff7eb6" stroke-width="6" stroke-dasharray="4 12" stroke-linecap="round"/><path d="M96 86 L112 108 L124 82" fill="none" stroke="#ff7eb6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="sync-t">即時同步</span>
+
+  <div class="phone">
+    <svg viewBox="0 0 400 220" width="134" height="74" style="display:block;margin-top:18px;border-radius:6px"><use href="#scene"/>
+      <path d="M282 150 C 280 118 340 112 344 146 C 348 182 300 196 286 176 C 278 164 284 150 296 146" fill="none" stroke="#ff4d6d" stroke-width="7" stroke-linecap="round"/>
+    </svg>
+    <div style="font-size:13px;font-weight:900;margin-top:12px;line-height:1.5">物體在 2F 外<br><span style="color:#ff4d6d">→ 倒立縮小實像</span></div>
+    <div style="font-size:12px;font-weight:900;margin-top:14px;padding:3px 8px;border:2px solid var(--ink);border-radius:999px;display:inline-block">👀 跟著老師</div>
+    <svg viewBox="0 0 150 40" width="130" height="34" style="display:block;margin-top:14px"><path d="M8 26 C 30 6 50 34 72 16 C 92 2 110 30 140 12" fill="none" stroke="#3a86ff" stroke-width="4" stroke-linecap="round"/></svg>
+    <div style="font-size:11px;font-weight:700;color:#6d6782">學生也能寫字回答</div>
+  </div>
+  <span class="tag t2">📱 學生的手機</span>
+
+  <svg class="bf b1" viewBox="0 0 120 112"><use href="#bf-wings"/><use href="#bf-body"/></svg>
+  <svg class="bf b2" viewBox="0 0 120 112"><use href="#bf-wings"/><use href="#bf-body"/></svg>
+</body></html>

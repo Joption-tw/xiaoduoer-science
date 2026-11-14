@@ -21,7 +21,7 @@ if not browser:
     sys.exit("找不到 Edge 或 Chrome")
 
 with tempfile.TemporaryDirectory() as tmp:
-    for name in ("home", "optics"):
+    for name in ("home", "optics", "live"):
         src = (OG / f"{name}.html").read_text(encoding="utf-8").replace("<!--BF_DEFS-->", defs)
         page = pathlib.Path(tmp) / f"{name}.html"
         page.write_text(src, encoding="utf-8")

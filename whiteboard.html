@@ -231,7 +231,7 @@
   history.replaceState(null, '', location.pathname + '?room=' + code);
   $('code').textContent = code.slice(0, 3) + ' ' + code.slice(3);
   // 分享列要等網址有代碼才載入，分享出去的才是這個白板
-  const sc = document.createElement('script'); sc.src = 'share.js?v=4'; document.body.appendChild(sc);
+  const sc = document.createElement('script'); sc.src = 'share.js?v=5'; document.body.appendChild(sc);
 
   const me = LIVE.me;
   let seq = 0;

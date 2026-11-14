@@ -346,7 +346,9 @@
       LIVE.start(v, false); toast('連線中，等一下畫面就會跟著老師');
     };
     if (b('stop')) b('stop').onclick = () => { LIVE.stop(); panel.hidden = true; };
+    const ln = panel.querySelector('.line'); if (ln) ln.addEventListener('click', () => window.XD_SHARE && window.XD_SHARE('line'));
     if (b('copy')) b('copy').onclick = async () => {
+      if (window.XD_SHARE) window.XD_SHARE('copy');
       try { await navigator.clipboard.writeText(link); toast('連結已複製，貼給學生就可以了'); }
       catch (e) { window.prompt('複製這個連結傳給學生：', link); }
     };

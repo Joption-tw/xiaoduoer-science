@@ -35,6 +35,7 @@
   .xd-panel .code { font-weight: 900; font-size: 1.2rem; letter-spacing: .12em; color: #d6337a; }
   .xd-panel .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .xd-panel .row .xd-b { font-size: .88rem; padding: 6px 13px; }
+  .xd-in { font: inherit; font-weight: 700; letter-spacing: .1em; width: 9em; padding: 6px 10px; border: 2.5px solid #2b2540; border-radius: 12px; background: #fff; color: #2b2540; }
   .xd-panel .line { background: #5fc663; color: #fff; text-decoration: none; }
   .xd-panel .x { position: absolute; right: 10px; top: 8px; border: 0; background: none; font-size: 1.1rem; cursor: pointer; color: #6d6782; }
   .xd-else { left: 12px; right: 12px; margin: 0 auto; width: fit-content; top: max(10px, env(safe-area-inset-top, 0px)); background: #2b2540; color: #fff; border-radius: 999px; padding: 6px 8px 6px 16px; display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: .9rem; }
@@ -53,7 +54,7 @@
   const cv = el('canvas', 'xd-ov'); document.body.appendChild(cv);
   const ctx = cv.getContext('2d');
   const fab = el('div', 'xd-ui xd-fab');
-  const liveBtn = el('button', 'xd-b w xd-live', '<span class="led"></span><span class="lt">📡 一起看</span>'); liveBtn.type = 'button';
+  const liveBtn = el('button', 'xd-b w xd-live', '<span class="led"></span><span class="lt">📡 上課連線</span>'); liveBtn.type = 'button';
   const penBtn = el('button', 'xd-b', '🖍️<span class="lbl"> 在這頁畫</span>'); penBtn.type = 'button';
   fab.append(liveBtn, penBtn); document.body.appendChild(fab);
   const bar = el('div', 'xd-ui xd-bar'); bar.hidden = true; document.body.appendChild(bar);
@@ -229,7 +230,10 @@
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   document.addEventListener('keydown', e => { if (on && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); } if (on && e.key === 'Escape') setOn(false); });
 
-  /* ---------- 捲動跟著對方 ---------- */
+  /* ---------- 老師主控：捲動、按鈕、滑桿、拖拉動畫，學生畫面跟著動 ---------- */
+  const isT = () => !!(LIVE && LIVE.teacher && LIVE.state === 'ok' && LIVE.people > 1);
+  const fromTeacher = m => !!(LIVE && m.tc && !LIVE.teacher);
+  const R4 = v => Math.round(v * 10000) / 10000;
   let quietUntil = 0, scT = 0, scLast = 0;
   function scrollMsg() {
     // 找畫面上方一個「小一點」的元素當基準（大區塊在不同寬度的螢幕上高度差很多）
@@ -240,58 +244,130 @@
     }
     if (!t) t = target(innerWidth / 2, y);
     const r = t.getBoundingClientRect();
-    return { t: 'sc', a: pathOf(t), f: r.height ? Math.round((y - r.top) / r.height * 10000) / 10000 : 0, y, top: window.scrollY <= 2 };
+    return { t: 'sc', a: pathOf(t), f: r.height ? R4((y - r.top) / r.height) : 0, y, top: window.scrollY <= 2 };
   }
   window.addEventListener('scroll', () => {
     kick();
-    if (!LIVE || LIVE.people < 2 || performance.now() < quietUntil) return;
+    if (!isT() || performance.now() < quietUntil) return;
     clearTimeout(scT);
     const go = () => { scLast = performance.now(); send(scrollMsg()); };
     if (performance.now() - scLast > 250) go(); else scT = setTimeout(go, 150);
   }, { passive: true });
+  setInterval(() => { if (isT()) send(Object.assign(scrollMsg(), { soft: 1 })); }, 2500);   // 晚進來的學生也會跟上
   function followScroll(m) {
+    if (!fromTeacher(m)) return;
     let top;
     if (m.top) top = 0;
     else { const t = resolve(cleanA(m.a)), r = t.getBoundingClientRect(); top = window.scrollY + r.top + (+m.f || 0) * r.height - (+m.y || 90); }
+    top = Math.max(0, top);
+    if (m.soft && Math.abs(top - window.scrollY) < 40) return;
     quietUntil = performance.now() + 700;
-    window.scrollTo(0, Math.max(0, top));
+    window.scrollTo(0, top);
   }
 
-  /* ---------- 連線 ---------- */
+  // 老師這邊：記下操作送出去
+  const skip = t => !t || !t.closest || t === cv || t.closest('.xd-ui, .share-bar');
+  const sendVal = (t, ev) => {
+    if (!t.matches || !t.matches('input,select,textarea')) return;
+    const cb = t.type === 'checkbox' || t.type === 'radio';
+    send({ t: 'ui', k: 'v', ev, a: pathOf(t), cb: cb ? 1 : 0, v: cb ? (t.checked ? 1 : 0) : String(t.value).slice(0, 200) });
+  };
+  document.addEventListener('input', e => { if (isT() && e.isTrusted && !skip(e.target)) sendVal(e.target, 'input'); }, true);
+  document.addEventListener('change', e => { if (isT() && e.isTrusted && !skip(e.target)) sendVal(e.target, 'change'); }, true);
+  document.addEventListener('click', e => {
+    if (!isT() || !e.isTrusted || skip(e.target)) return;
+    const b = e.target.closest('button,summary,[role=button],[role=tab]'); if (!b || skip(b)) return;
+    send({ t: 'ui', k: 'c', a: pathOf(b) });
+  }, true);
+  let pdEl = null, pmLast = 0;
+  const sendPe = (ty, e) => { const r = pdEl.getBoundingClientRect(); if (r.width) send({ t: 'ui', k: 'p', ty, a: pathOf(pdEl), x: R4((e.clientX - r.left) / r.width), y: R4((e.clientY - r.top) / r.height) }); };
+  document.addEventListener('pointerdown', e => {
+    if (!isT() || !e.isTrusted || on) return;
+    const c = e.target.closest && e.target.closest('canvas'); if (!c || c === cv) return;
+    pdEl = c; sendPe('pointerdown', e);
+  }, true);
+  window.addEventListener('pointermove', e => {
+    if (!pdEl || !e.isTrusted) return; const n = performance.now(); if (n - pmLast < 33) return; pmLast = n; sendPe('pointermove', e);
+  }, true);
+  const pEnd = e => { if (!pdEl || !e.isTrusted) return; sendPe('pointermove', e); sendPe('pointerup', e); pdEl = null; };
+  window.addEventListener('pointerup', pEnd, true); window.addEventListener('pointercancel', pEnd, true);
+
+  // 學生這邊：照做一次
+  function mirror(m) {
+    if (!fromTeacher(m)) return;
+    const t = resolve(cleanA(m.a)); if (!t || t === document.body) return;
+    if (m.k === 'v') {
+      if (!t.matches('input,select,textarea')) return;
+      if (m.cb) t.checked = !!m.v; else t.value = String(m.v);
+      t.dispatchEvent(new Event(m.ev === 'change' ? 'change' : 'input', { bubbles: true }));
+    } else if (m.k === 'c') {
+      if (t.matches('button,summary,[role=button],[role=tab]')) t.click();
+    } else if (m.k === 'p') {
+      if (t.tagName !== 'CANVAS') return;
+      const r = t.getBoundingClientRect(), ty = { pointerdown: 1, pointermove: 1, pointerup: 1 }[m.ty] ? m.ty : 'pointermove';
+      t.dispatchEvent(new PointerEvent(ty, { bubbles: true, cancelable: true, pointerId: 91, pointerType: 'mouse', isPrimary: true, button: 0, buttons: ty === 'pointerup' ? 0 : 1,
+        clientX: r.left + (+m.x || 0) * r.width, clientY: r.top + (+m.y || 0) * r.height }));
+    }
+  }
+
+  /* ---------- 上課連線面板 ---------- */
   function renderPanel() {
-    const code = LIVE.code || LIVE.savedCode, conn = LIVE.state !== 'off';
+    const code = LIVE.code || LIVE.savedCode, conn = LIVE.state !== 'off', T = LIVE.teacher;
     const link = LIVE.link(code || '000000');
-    panel.innerHTML = `<button class="x" type="button" aria-label="關閉">✖</button>
-      <h4>📡 一起看這一頁</h4>
-      <p>把連結傳給對方，對方打開就會看到你在這頁畫的東西，你換頁、捲動，他也會跟著。說話可以同時開 LINE 通話。</p>
-      ${conn ? `<div>教室代碼 <span class="code">${code.slice(0, 3)} ${code.slice(3)}</span></div>
-      <div style="font-size:.88rem;color:#6d6782;margin-top:2px">${LIVE.state === 'ok' ? (LIVE.people > 1 ? `已連線，共 ${LIVE.people} 人` : '已開好，等對方打開連結…') : LIVE.state === 'bad' ? '網路連不上，自動重試中…' : '連線中…'}</div>
-      <div class="row"><a class="xd-b line" target="_blank" rel="noopener" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}">LINE 傳給對方</a>
-        <button class="xd-b w" type="button" data-a="copy">複製連結</button><button class="xd-b w" type="button" data-a="stop">結束連線</button></div>`
-      : `<div class="row"><button class="xd-b" type="button" data-a="start">開始連線</button></div>`}`;
+    const st = LIVE.state === 'ok' ? (T ? (LIVE.people > 1 ? `上課中，${LIVE.people - 1} 位學生在線上` : '已開好，等學生打開連結…') : (LIVE.people > 1 ? '已連上老師，畫面會跟著老師動' : '等老師上線…'))
+      : LIVE.state === 'bad' ? '網路連不上，自動重試中…' : '連線中…';
+    panel.innerHTML = `<button class="x" type="button" aria-label="關閉">✖</button>` + (!conn ? `
+      <h4>📡 上課連線</h4>
+      <p>老師換頁、捲動、操作動畫，學生的畫面就跟著動；兩邊都可以按 🖍️ 寫字、畫圈。說話可以同時開 LINE 通話。</p>
+      <div class="row"><button class="xd-b" type="button" data-a="teach">👩‍🏫 我是老師，開始上課</button></div>
+      <p style="margin:14px 0 0"><b style="color:#2b2540">🙋 我是學生</b>：輸入老師給的 6 位數代碼</p>
+      <form class="row" data-a="joinf"><input class="xd-in" inputmode="numeric" autocomplete="off" maxlength="7" placeholder="例如 123456" aria-label="老師給的代碼"><button class="xd-b" type="submit">加入</button></form>`
+      : T ? `
+      <h4>👩‍🏫 你是老師</h4>
+      <p>把連結傳給學生。學生打開後，你換頁、捲動、拖動畫，他的畫面都會跟著動。</p>
+      <div>上課代碼 <span class="code">${code.slice(0, 3)} ${code.slice(3)}</span></div>
+      <div style="font-size:.88rem;color:#6d6782;margin-top:2px">${st}</div>
+      <div class="row"><a class="xd-b line" target="_blank" rel="noopener" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}">LINE 傳給學生</a>
+        <button class="xd-b w" type="button" data-a="copy">複製連結</button><button class="xd-b w" type="button" data-a="stop">下課</button></div>`
+      : `
+      <h4>👀 跟著老師上課</h4>
+      <p>畫面會跟著老師換頁、捲動。想寫字或畫圈，按右下角 🖍️。</p>
+      <div>上課代碼 <span class="code">${code.slice(0, 3)} ${code.slice(3)}</span></div>
+      <div style="font-size:.88rem;color:#6d6782;margin-top:2px">${st}</div>
+      <div class="row"><button class="xd-b w" type="button" data-a="stop">離開</button></div>`);
     panel.querySelector('.x').onclick = () => { panel.hidden = true; };
     const b = a => panel.querySelector(`[data-a="${a}"]`);
-    if (b('start')) b('start').onclick = () => { LIVE.start(LIVE.savedCode || LIVE.newCode()); };
+    if (b('teach')) b('teach').onclick = () => { LIVE.start(LIVE.savedCode || LIVE.newCode(), true); };
+    if (b('joinf')) b('joinf').onsubmit = e => {
+      e.preventDefault(); const v = b('joinf').querySelector('input').value.replace(/\D/g, '');
+      if (v.length !== 6) { toast('代碼是 6 個數字'); return; }
+      LIVE.start(v, false); toast('連線中，等一下畫面就會跟著老師');
+    };
     if (b('stop')) b('stop').onclick = () => { LIVE.stop(); panel.hidden = true; };
     if (b('copy')) b('copy').onclick = async () => {
-      try { await navigator.clipboard.writeText(link); toast('連結已複製，貼給對方就可以了'); }
-      catch (e) { window.prompt('複製這個連結傳給對方：', link); }
+      try { await navigator.clipboard.writeText(link); toast('連結已複製，貼給學生就可以了'); }
+      catch (e) { window.prompt('複製這個連結傳給學生：', link); }
     };
   }
   if (LIVE) {
     liveBtn.addEventListener('click', () => { panel.hidden = !panel.hidden; if (!panel.hidden) renderPanel(); });
+    let wasN = 1;
     LIVE.on('status', (stt, n) => {
       liveBtn.classList.remove('ok', 'wait', 'bad'); if (stt !== 'off') liveBtn.classList.add(stt);
-      liveBtn.querySelector('.lt').textContent = stt === 'off' ? '📡 一起看' : stt === 'ok' ? (n > 1 ? `${n} 人一起看` : '等對方…') : '連線中';
+      const T = LIVE.teacher;
+      liveBtn.querySelector('.lt').textContent = stt === 'off' ? '📡 上課連線'
+        : stt === 'ok' ? (T ? (n > 1 ? `👩‍🏫 ${n - 1} 位學生` : '👩‍🏫 等學生…') : (n > 1 ? '👀 跟著老師' : '等老師…')) : '連線中';
+      if (stt === 'ok' && n > wasN) toast(T ? '有學生加入了 👋' : '連上老師了 👀 畫面會跟著老師動');
+      wasN = stt === 'ok' ? n : 1;
       if (!panel.hidden) renderPanel();
     });
-    LIVE.on('msg', apply);
+    LIVE.on('msg', m => { if (m.t === 'ui') mirror(m); else apply(m); });
     LIVE.onInit(() => [{ t: 'dinit', strokes: strokes.filter(s => s.done).map(strip) }]);
     LIVE.on('elsewhere', m => {
-      elseBar.innerHTML = ''; const sp = el('span', '', `📡 對方在「${String(m.title || '').replace(/[<>&]/g, '').replace(/｜.*/, '')}」`);
-      const go = el('button', 'xd-b', '跟過去'); go.type = 'button'; go.onclick = () => { try { const u = new URL(m.url, location.href); if (u.origin === location.origin) location.href = u.href; } catch (e) {} };
+      if (!LIVE.teacher) return;   // 學生會自動跟過去；老師這邊只提醒
+      elseBar.innerHTML = ''; const sp = el('span', '', `📡 有學生在「${String(m.title || '').replace(/[<>&]/g, '').replace(/｜.*/, '')}」`);
       const x = el('button', 'xd-b w', '✖'); x.type = 'button'; x.onclick = () => { elseBar.hidden = true; };
-      elseBar.append(sp, go, x); elseBar.hidden = false;
+      elseBar.append(sp, x); elseBar.hidden = false; setTimeout(() => { elseBar.hidden = true; }, 5000);
     });
   } else liveBtn.hidden = true;
 

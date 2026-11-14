@@ -27,7 +27,7 @@
   const emit = (k, ...a) => L[k].forEach(f => { try { f(...a); } catch (e) { console.error(e); } });
 
   let peer = null, conns = new Set(), hostConn = null, role = '', gen = 0, active = false;
-  const S = { code: '', people: 1, state: 'off' };
+  const S = { code: '', people: 1, state: 'off', teacher: ss.get('xde-teach') === '1' };   // teacher：老師主控畫面，學生跟著
   const setState = st => { S.state = st; emit('status', st, S.people); };
   const PeerC = () => window.Peer || (window.peerjs && window.peerjs.Peer);
   function loadPeer(cb) {
@@ -36,16 +36,16 @@
     document.head.appendChild(s);
   }
   const ok = m => m && typeof m === 'object' && typeof m.t === 'string';
-  const here = () => { const u = new URL(location.href); u.searchParams.delete('room'); return { t: 'here', url: (u.pathname.split('/').pop() || 'index.html') + u.search, title: document.title, pg: pageKey(), by: me }; };
+  const here = () => { const u = new URL(location.href); u.searchParams.delete('room'); return { t: 'here', url: (u.pathname.split('/').pop() || 'index.html') + u.search, title: document.title, pg: pageKey(), by: me, tc: S.teacher ? 1 : 0 }; };
+  const go = url => { let u; try { u = new URL(url, location.href); } catch (e) { return; } if (u.origin !== location.origin) return; ss.set('xde-live', S.code); location.href = u.href; };
 
   function deliver(m) {
     if (m.t === 'n') { S.people = +m.n || 1; setState('ok'); return; }
-    if (m.t === 'here') { if (m.pg !== pageKey()) emit('elsewhere', m); return; }
-    if (m.t === 'nav') {
-      let u; try { u = new URL(m.url, location.href); } catch (e) { return; }
-      if (u.origin !== location.origin) return;            // 只跟著換到這個網站裡的頁面
-      ss.set('xde-live', S.code); location.href = u.href; return;
+    if (m.t === 'here') {                                   // 學生：老師在別頁就自動跟過去
+      if (m.pg !== pageKey()) { if (m.tc && !S.teacher) go(m.url); else emit('elsewhere', m); }
+      return;
     }
+    if (m.t === 'nav') { if (m.tc && !S.teacher) go(m.url); return; }   // 只跟老師換頁
     if (m.pg && m.pg !== pageKey()) return;
     emit('msg', m);
   }
@@ -104,18 +104,20 @@
     me, pageKey,
     get code() { return S.code; }, get people() { return S.people; }, get state() { return S.state; }, get role() { return role; },
     get savedCode() { return ls.get('xde-room') || ''; },
+    get teacher() { return S.teacher; },
     on(k, f) { L[k].push(f); if (k === 'status') f(S.state, S.people); },
     onInit(f) { inits.push(f); },
     newCode() { return String(100000 + Math.floor(Math.random() * 900000)); },
-    start(code) {
+    start(code, asTeacher) {          // asTeacher：true 老師、false 學生、不給就照這個分頁原本的身分
       code = String(code || '').replace(/\D/g, '').slice(0, 6); if (code.length !== 6) return;
-      if (active && code === S.code) return;
+      if (asTeacher !== undefined) { S.teacher = !!asTeacher; ss.set('xde-teach', S.teacher ? '1' : ''); }
+      if (active && code === S.code) { setState(S.state); if (role === 'host') count(); else if (hostConn && hostConn.open) try { hostConn.send(here()); } catch (e) {} return; }
       S.code = code; active = true; ls.set('xde-room', code); ss.set('xde-live', code);
       loadPeer(claim);
     },
-    stop() { active = false; ss.set('xde-live', ''); destroy(); S.people = 1; setState('off'); },
+    stop() { active = false; S.teacher = false; ss.set('xde-teach', ''); ss.set('xde-live', ''); destroy(); S.people = 1; setState('off'); },
     send(m) {
-      if (!active) return; m = Object.assign({ pg: pageKey() }, m);
+      if (!active) return; m = Object.assign({ pg: pageKey(), tc: S.teacher ? 1 : 0 }, m);
       if (role === 'host') { for (const c of conns) if (c.open) try { c.send(m); } catch (e) {} }
       else if (hostConn && hostConn.open) try { hostConn.send(m); } catch (e) {}
     },
@@ -124,15 +126,17 @@
     },
   };
 
-  // 連線中點站內連結：帶對方一起換頁
+  // 老師點站內連結：帶學生一起換頁
   document.addEventListener('click', e => {
-    if (!active || role === '' || S.people < 2 || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    if (!active || !S.teacher || role === '' || S.people < 2 || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
     const a = e.target.closest && e.target.closest('a[href]'); if (!a || (a.target && a.target !== '_self')) return;
     let u; try { u = new URL(a.href, location.href); } catch (err) { return; }
     if (u.origin !== location.origin || (u.pathname === location.pathname && u.search === location.search)) return;
     e.preventDefault(); LIVE.send({ t: 'nav', url: (u.pathname.split('/').pop() || 'index.html') + u.search + u.hash });   // 只傳檔名，對方用自己的網址組回去
     setTimeout(() => { location.href = u.href; }, 160);
   }, true);
+  // 老師每 4 秒報一次自己在哪一頁：學生自己跑去別頁會被帶回來，晚進來的也會跟上
+  setInterval(() => { if (active && S.teacher && S.people > 1) LIVE.send(here()); }, 4000);
   window.addEventListener('pagehide', () => { try { peer && peer.destroy(); } catch (e) {} });
 
   // 自動加入：網址帶 ?room=，或這個分頁剛剛在連線中換頁過來
@@ -141,7 +145,7 @@
     const q = (new URLSearchParams(location.search).get('room') || '').replace(/\D/g, '');
     if (q.length === 6) {
       const u = new URL(location.href); u.searchParams.delete('room'); history.replaceState(null, '', u.pathname + u.search + u.hash);
-      LIVE.start(q);
+      LIVE.start(q, false);   // 點老師給的連結進來的是學生
     } else if (ss.get('xde-live')) LIVE.start(ss.get('xde-live'));
   }, 0);
 })();

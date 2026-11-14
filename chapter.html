@@ -99,6 +99,8 @@
   /* 動畫元件外框（內容由 widgets.js 畫） */
   .wg { margin: 4px 0 16px; border: 2.5px solid var(--line); border-radius: 18px; background: #fbfdff; padding: 12px; }
   .wg-t { font-weight: 900; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .wg-t.st::before { content: "⏯ 一步一步"; background: var(--sun); color: var(--ink); }
+  .wbtn:disabled { opacity: .4; cursor: default; }
   .wg-t::before { content: "▶ 動畫"; flex: none; white-space: nowrap; align-self: flex-start; margin-top: 3px; font-size: .75rem; background: var(--pink); color: #fff; border: 2px solid var(--line); border-radius: 8px; padding: 0 8px; }
   .wg canvas { display: block; width: 100%; border: 2px solid #d9e2f0; border-radius: 12px; background: #fff; touch-action: none; }
   .ctl { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 10px; font-weight: 700; font-size: .95rem; }
@@ -200,7 +202,7 @@
   <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
 </div>
 
-<script src="curriculum.js?v=4"></script>
+<script src="curriculum.js?v=5"></script>
 <script>
 /* ===== 讀網址：chapter.html?c=8a-3 ===== */
 const P = new URLSearchParams(location.search);
@@ -308,9 +310,9 @@ function render() {
 }
 
 Promise.all([
-  load(`data/${TERM}.js?v=3`).catch(() => {}),
-  load('data/more.js?v=1').catch(() => {}),
-  load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1')])).catch(() => {}),
+  load(`data/${TERM}.js?v=4`).catch(() => {}),
+  load('data/more.js?v=2').catch(() => {}),
+  load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=1')])).catch(() => {}),
 ]).then(render);
 </script>
 <script src="share.js?v=4"></script>

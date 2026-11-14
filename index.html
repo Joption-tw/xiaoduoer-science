@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* 版面：大封面（名字 + 大鳳蝶）→ 單元卡片 → 今日小知識。貼紙感，可愛版大鳳蝶是小朵兒的記號 */
+  /* 版面：大封面（名字 + 大鳳蝶）→ 課本目錄（資料在 curriculum.js）→ 今日小知識。貼紙感，可愛版大鳳蝶是小朵兒的記號 */
   :root {
     --bg: #fff8ef;
     --ink: #2b2540;
@@ -146,34 +146,39 @@
   }
   .chip.on { background: var(--ink); color: #fff; }
 
-  /* 單元卡片 */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
-  .card {
-    position: relative; background: var(--card); border: 2.5px solid var(--line); border-radius: 20px;
-    padding: 20px 18px 18px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s;
-    text-decoration: none; color: inherit; display: block;
+  /* 課本目錄：學期分頁 → 現在學到 → 每一章一張卡，節列在卡片裡 */
+  :root { --earth: #20b07a; --earth-soft: #e4f9ef; }
+  .now-bar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; text-decoration: none; color: var(--ink);
+    background: var(--sun); border: 2.5px solid var(--line); border-radius: 18px; box-shadow: var(--shadow);
+    padding: 12px 18px; margin-bottom: 10px; font-weight: 700; transition: transform .12s, box-shadow .12s;
   }
-  .card:hover { transform: translate(-3px, -3px) rotate(-.5deg); box-shadow: 7px 7px 0 var(--line); }
-  .card .icon {
-    width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; font-size: 1.8rem;
-    border: 2px solid var(--line); margin-bottom: 12px;
-  }
-  .card.phy .icon { background: var(--phy-soft); }
-  .card.chem .icon { background: var(--chem-soft); }
-  .card h3 { margin: 0 0 4px; font-size: 1.18rem; }
-  .card p { margin: 0; color: var(--muted); font-size: .93rem; }
-  .tag {
-    position: absolute; top: 16px; right: 14px; font-size: .78rem; font-weight: 700; color: #fff;
-    padding: 2px 10px; border-radius: 999px; border: 2px solid var(--line);
-  }
-  .phy .tag { background: var(--phy); }
-  .chem .tag { background: var(--chem); }
-  .soon { display: inline-block; margin-top: 12px; font-size: .8rem; font-weight: 700; color: var(--muted);
-    border: 1.5px dashed var(--muted); border-radius: 8px; padding: 1px 8px; }
-  .card.hide { display: none; }
-  .card.ready { background: var(--pink-soft); }
-  .open { display: inline-block; margin-top: 12px; font-size: .82rem; font-weight: 900; color: #fff;
-    background: var(--mint); border: 2px solid var(--line); border-radius: 8px; padding: 1px 10px; }
+  a.now-bar:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--line); }
+  .now-bar .pin { font-size: 1.4rem; flex: none; }
+  .now-bar .txt { flex: 1 1 220px; min-width: 0; }
+  .now-bar b { font-size: 1.15rem; font-weight: 900; }
+  .now-bar .go { margin-left: auto; background: #fff; border: 2px solid var(--line); border-radius: 10px; padding: 2px 12px; font-weight: 900; }
+  .book-note { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
+  .chapters { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+  .chap { background: var(--card); border: 2.5px solid var(--line); border-radius: 20px; padding: 16px 16px 12px; box-shadow: var(--shadow); min-width: 0; }
+  .chap-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .chap .icon { width: 48px; height: 48px; flex: none; border-radius: 14px; display: grid; place-items: center; font-size: 1.6rem; border: 2px solid var(--line); }
+  .chap.phy .icon { background: var(--phy-soft); } .chap.chem .icon { background: var(--chem-soft); } .chap.earth .icon { background: var(--earth-soft); }
+  .chap-head small { display: block; color: var(--muted); font-weight: 700; font-size: .8rem; letter-spacing: .05em; }
+  .chap-head h3 { margin: 0; font-size: 1.15rem; line-height: 1.3; text-wrap: balance; }
+  .chap .tag { margin-left: auto; align-self: start; font-size: .75rem; font-weight: 700; color: #fff; padding: 1px 9px; border-radius: 999px; border: 2px solid var(--line); flex: none; }
+  .chap.phy .tag { background: var(--phy); } .chap.chem .tag { background: var(--chem); } .chap.earth .tag { background: var(--earth); }
+  .secs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .sec { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 12px; color: var(--ink); text-decoration: none; border: 2px solid transparent; }
+  .sec .num { font-weight: 900; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 2.2em; }
+  .sec .nm { flex: 1; min-width: 0; }
+  .sec .badge { flex: none; font-size: .76rem; font-weight: 900; border-radius: 8px; padding: 1px 8px; border: 2px solid var(--line); }
+  a.sec { background: var(--pink-soft); border-color: var(--line); font-weight: 700; }
+  a.sec:hover { background: #ffd0e6; }
+  a.sec .badge { background: var(--mint); color: #fff; }
+  .sec.now { box-shadow: 0 0 0 3px var(--sun); }
+  .sec .badge.nowb { background: var(--sun); color: var(--ink); }
+  .sec:not(a) .nm { color: #4a4560; }
 
   /* 今日小知識 */
   .fact {
@@ -284,26 +289,12 @@
     <main>
       <section id="units">
         <div class="sec-head">
-          <h2>學習單元<span>小朵兒想學哪一個？</span></h2>
-          <div class="filters">
-            <button class="chip on" data-f="all">全部</button>
-            <button class="chip" data-f="phy">物理</button>
-            <button class="chip" data-f="chem">化學</button>
-          </div>
+          <h2>課本目錄<span>照課本章節排好，有 ▶ 的就能玩</span></h2>
+          <div class="filters" id="terms" role="tablist" aria-label="選擇學期"></div>
         </div>
-
-        <div class="grid">
-          <a class="card phy ready" href="optics.html"><span class="tag">物理</span><div class="icon">🌈</div><h3>光：面鏡與透鏡</h3><p>拖拉物體看成像、常考表格、小測驗</p><span class="open">已開放 · 互動動畫 ▶</span></a>
-          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">📏</div><h3>基本測量</h3><p>長度、體積、質量與密度</p><span class="soon">內容準備中</span></a>
-          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">🧊</div><h3>物質的世界</h3><p>三態變化、純物質與混合物</p><span class="soon">內容準備中</span></a>
-          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">🔊</div><h3>波動與聲音</h3><p>波的性質、聲音怎麼傳播</p><span class="soon">內容準備中</span></a>
-          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">🌡️</div><h3>溫度與熱</h3><p>熱的傳播、比熱與熱量</p><span class="soon">內容準備中</span></a>
-          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">⚛️</div><h3>原子與元素</h3><p>原子結構、週期表</p><span class="soon">內容準備中</span></a>
-          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">🔥</div><h3>化學反應</h3><p>質量守恆、化學式與計量</p><span class="soon">內容準備中</span></a>
-          <a class="card chem" href="#"><span class="tag">化學</span><div class="icon">🍋</div><h3>酸鹼鹽</h3><p>電解質、pH 值與中和</p><span class="soon">內容準備中</span></a>
-          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">🚀</div><h3>力與運動</h3><p>速度、加速度、牛頓定律</p><span class="soon">內容準備中</span></a>
-          <a class="card phy" href="#"><span class="tag">物理</span><div class="icon">⚡</div><h3>電與磁</h3><p>電路、歐姆定律、電磁感應</p><span class="soon">內容準備中</span></a>
-        </div>
+        <a class="now-bar" id="nowBar" hidden></a>
+        <p class="book-note" id="bookNote"></p>
+        <div class="chapters" id="chapters"></div>
       </section>
 
       <section>
@@ -321,15 +312,53 @@
     <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
   </div>
 
+<script src="curriculum.js?v=1"></script>
 <script>
-  // 單元篩選
-  const chips = document.querySelectorAll('.chip');
-  const cards = document.querySelectorAll('.card');
-  chips.forEach(chip => chip.addEventListener('click', () => {
-    chips.forEach(c => c.classList.toggle('on', c === chip));
-    const f = chip.dataset.f;
-    cards.forEach(card => card.classList.toggle('hide', f !== 'all' && !card.classList.contains(f)));
-  }));
+  // 課本目錄（資料在 curriculum.js）
+  (function () {
+    const B = window.BOOK; if (!B) return;
+    const SUB = { phy: '物理', chem: '化學', earth: '地科' };
+    const KEY = 'xde-term';
+    let cur = B.now.term;
+    try { const t = localStorage.getItem(KEY); if (B.terms.some(x => x.id === t)) cur = t; } catch (e) {}
+
+    // 現在學到哪裡
+    const nt = B.terms.find(t => t.id === B.now.term);
+    let nowSec = null, nowChap = null;
+    if (nt) for (const c of nt.chapters) for (const x of c.secs) if (x[0] === B.now.sec) { nowSec = x; nowChap = c; }
+    const bar = document.getElementById('nowBar');
+    if (nowSec) {
+      bar.hidden = false;
+      bar.innerHTML = `<span class="pin">📍</span><span class="txt">現在學到：${nt.name} 第 ${nowChap.n} 章　<b>${nowSec[0]} ${nowSec[1]}</b></span>` +
+        (nowSec[2] ? '<span class="go">去玩動畫 ▶</span>' : '');
+      if (nowSec[2]) bar.href = nowSec[2]; else bar.removeAttribute('href');
+    }
+    document.getElementById('bookNote').textContent =
+      `章節依${B.version}課本排列（康軒版八年級的章名和順序也一樣）。`;
+
+    function render() {
+      document.getElementById('terms').innerHTML = B.terms.map(t =>
+        `<button class="chip${t.id === cur ? ' on' : ''}" role="tab" aria-selected="${t.id === cur}" data-t="${t.id}" title="${t.full}">${t.name}</button>`).join('');
+      const term = B.terms.find(t => t.id === cur);
+      document.getElementById('chapters').innerHTML = term.chapters.map(c => {
+        const rows = c.secs.map(x => {
+          const isNow = term.id === B.now.term && x[0] === B.now.sec;
+          const nowB = isNow ? '<span class="badge nowb">正在學</span>' : '';
+          return x[2]
+            ? `<li><a class="sec${isNow ? ' now' : ''}" href="${x[2]}"><span class="num">${x[0]}</span><span class="nm">${x[1]}</span>${nowB}<span class="badge">▶ 動畫</span></a></li>`
+            : `<li><div class="sec${isNow ? ' now' : ''}"><span class="num">${x[0]}</span><span class="nm">${x[1]}</span>${nowB}</div></li>`;
+        }).join('');
+        return `<article class="chap ${c.sub}"><div class="chap-head"><div class="icon" aria-hidden="true">${c.icon}</div>` +
+          `<div><small>第 ${c.n} 章</small><h3>${c.title}</h3></div><span class="tag">${SUB[c.sub]}</span></div><ul class="secs">${rows}</ul></article>`;
+      }).join('');
+    }
+    document.getElementById('terms').addEventListener('click', e => {
+      const b = e.target.closest('[data-t]'); if (!b) return;
+      cur = b.dataset.t; try { localStorage.setItem(KEY, cur); } catch (err) {}
+      render();
+    });
+    render();
+  })();
 
   // 今日小知識
   const facts = [

@@ -315,7 +315,9 @@
     const code = LIVE.code || LIVE.savedCode, conn = LIVE.state !== 'off', T = LIVE.teacher;
     const link = LIVE.link(code || '000000');
     const st = LIVE.state === 'ok' ? (T ? (LIVE.people > 1 ? `上課中，${LIVE.people - 1} 位學生在線上` : '已開好，等學生打開連結…') : (LIVE.people > 1 ? '已連上老師，畫面會跟著老師動' : '等老師上線…'))
-      : LIVE.state === 'bad' ? '網路連不上，自動重試中…' : '連線中…';
+      : LIVE.state === 'bad' ? (LIVE.why === 'p2p'
+        ? '找到老師了，但兩台裝置之間打不通。常見原因：其中一台開了 VPN，或兩邊在不同網路（例如一個在台灣、一個在大陸）。可以試試兩邊連同一個 Wi-Fi、關掉 VPN，或改用 Safari / Chrome 打開。持續自動重試中…'
+        : '連不上配對伺服器，請檢查網路，自動重試中…') : '連線中…';
     panel.innerHTML = `<button class="x" type="button" aria-label="關閉">✖</button>` + (!conn ? `
       <h4>📡 上課連線</h4>
       <p>老師換頁、捲動、操作動畫，學生的畫面就跟著動；兩邊都可以按 🖍️ 寫字、畫圈。說話可以同時開 LINE 通話。</p>
@@ -356,7 +358,8 @@
       liveBtn.classList.remove('ok', 'wait', 'bad'); if (stt !== 'off') liveBtn.classList.add(stt);
       const T = LIVE.teacher;
       liveBtn.querySelector('.lt').textContent = stt === 'off' ? '📡 上課連線'
-        : stt === 'ok' ? (T ? (n > 1 ? `👩‍🏫 ${n - 1} 位學生` : '👩‍🏫 等學生…') : (n > 1 ? '👀 跟著老師' : '等老師…')) : '連線中';
+        : stt === 'ok' ? (T ? (n > 1 ? `👩‍🏫 ${n - 1} 位學生` : '👩‍🏫 等學生…') : (n > 1 ? '👀 跟著老師' : '等老師…')) : stt === 'bad' ? '連不上' : '連線中';
+      if (stt === 'bad' && LIVE.why === 'p2p' && LIVE.fails === 1) { panel.hidden = false; }
       if (stt === 'ok' && n > wasN) toast(T ? '有學生加入了 👋' : '連上老師了 👀 畫面會跟著老師動');
       wasN = stt === 'ok' ? n : 1;
       if (!panel.hidden) renderPanel();

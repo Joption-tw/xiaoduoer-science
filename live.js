@@ -27,9 +27,15 @@
   const emit = (k, ...a) => L[k].forEach(f => { try { f(...a); } catch (e) { console.error(e); } });
 
   let peer = null, conns = new Set(), hostConn = null, role = '', gen = 0, active = false;
-  const S = { code: '', people: 1, state: 'off', teacher: ss.get('xde-teach') === '1' };   // teacher：老師主控畫面，學生跟著
-  const setState = st => { S.state = st; emit('status', st, S.people); };
+  const S = { code: '', people: 1, state: 'off', why: '', fails: 0, teacher: ss.get('xde-teach') === '1' };   // why：連不上的原因（net 網路、p2p 兩台直連失敗）   // teacher：老師主控畫面，學生跟著
+  const setState = (st, why) => { S.state = st; S.why = st === 'bad' ? (why || 'net') : ''; emit('status', st, S.people); };
   const PeerC = () => window.Peer || (window.peerjs && window.peerjs.Peer);
+  const OPTS = { debug: 0, config: { iceServers: [
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    { urls: ['stun:stun.cloudflare.com:3478'] },
+    { urls: ['stun:stun.miwifi.com:3478', 'stun:stun.chat.bilibili.com:3478'] },
+    { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
+  ] } };
   function loadPeer(cb) {
     if (PeerC()) return cb();
     const s = document.createElement('script'); s.src = PEERJS; s.onload = cb; s.onerror = () => setState('bad');
@@ -59,8 +65,8 @@
   function claim() {                       // 先試著當中繼
     if (!active) return; destroy(); const g = gen;
     if (S.state !== 'ok') setState('wait');
-    const p = peer = new (PeerC())(PREFIX + S.code, { debug: 0 });
-    p.on('open', () => { if (g !== gen) return; role = 'host'; S.people = 1; count(); });
+    const p = peer = new (PeerC())(PREFIX + S.code, OPTS);
+    p.on('open', () => { if (g !== gen) return; role = 'host'; S.fails = 0; S.people = 1; count(); });
     p.on('connection', c => {
       c.on('open', () => {
         if (g !== gen) return; conns.add(c);
@@ -84,12 +90,17 @@
   }
   function join() {
     destroy(); const g = gen;
-    const p = peer = new (PeerC())({ debug: 0 });
+    const p = peer = new (PeerC())(OPTS);
     const again = ms => setTimeout(() => { if (g === gen) claim(); }, ms);
     p.on('open', () => {
       if (g !== gen) return;
       const c = hostConn = p.connect(PREFIX + S.code, { reliable: true });
-      c.on('open', () => { if (g !== gen) return; role = 'guest'; try { c.send(here()); } catch (e) {} setState('ok'); });
+      // 找到對方了，但兩台之間 12 秒還打不通（網路不同、VPN、防火牆）→ 告訴使用者原因，再重試
+      const tm = setTimeout(() => {
+        if (g !== gen || c.open) return;
+        S.fails++; setState('bad', 'p2p'); again(2500);
+      }, 12000);
+      c.on('open', () => { clearTimeout(tm); if (g !== gen) return; role = 'guest'; S.fails = 0; try { c.send(here()); } catch (e) {} setState('ok'); });
       c.on('data', m => { if (g === gen && ok(m)) deliver(m); });
       c.on('close', () => { if (g !== gen) return; hostConn = null; S.people = 1; setState('wait'); again(300 + Math.random() * 1200); });
     });
@@ -102,7 +113,7 @@
 
   const LIVE = window.LIVE = {
     me, pageKey,
-    get code() { return S.code; }, get people() { return S.people; }, get state() { return S.state; }, get role() { return role; },
+    get code() { return S.code; }, get people() { return S.people; }, get state() { return S.state; }, get role() { return role; }, get why() { return S.why; }, get fails() { return S.fails; },
     get savedCode() { return ls.get('xde-room') || ''; },
     get teacher() { return S.teacher; },
     on(k, f) { L[k].push(f); if (k === 'status') f(S.state, S.people); },

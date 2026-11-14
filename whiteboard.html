@@ -210,7 +210,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script>window.LIVE_MANUAL = true;</script>
-<script src="live.js?v=3"></script>
+<script src="live.js?v=4"></script>
 <script>
 (function () {
   'use strict';
@@ -436,7 +436,7 @@
     stateNow = st; people = LIVE.people;
     $('status').className = 'pill ' + st;
     $('statusText').textContent = st === 'ok' ? (people > 1 ? `已連線 · 共 ${people} 人在白板上` : '白板開好了，等對方打開連結…')
-      : st === 'bad' ? '網路連不上，自動重試中…（自己還是可以畫）' : '連線中…';
+      : st === 'bad' ? (LIVE.why === 'p2p' ? '兩台裝置之間打不通（可能一邊開了 VPN 或網路不同），自動重試中…' : '網路連不上，自動重試中…（自己還是可以畫）') : '連線中…';
   }
   const send = m => LIVE.send(m);
   const act = m => { apply(m); send(m); };

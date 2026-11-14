@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小朵兒的互動白板</title>
+<meta name="description" content="邊講邊畫的線上白板：把連結傳給對方，對方打開就會即時看到你畫的內容，兩邊都可以畫。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:site_name" content="小朵兒的理化教室">
+<meta property="og:title" content="小朵兒的互動白板：一起邊講邊畫">
+<meta property="og:description" content="打開連結就會即時看到對方畫的內容，兩邊都可以畫。">
+<meta property="og:image" content="https://joption-tw.github.io/xiaoduoer-science/og/home.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* 互動白板：兩台電腦用 WebRTC 直接連線（PeerJS 免費的配對伺服器只負責牽線），筆跡不經過任何資料庫。
+     開白板的人＝主持人，電腦上會留一份（localStorage），其他人連到主持人，主持人再轉給大家。 */
+  :root {
+    --bg: #fff8ef; --ink: #2b2540; --muted: #6d6782; --card: #fff; --line: #2b2540;
+    --pink: #ff7eb6; --pink-soft: #ffe0ee; --sun: #ffd23f; --mint: #3ccf9e; --red: #ff4d6d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); line-height: 1.6;
+    font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    background-image: radial-gradient(#f1e3cf 1.2px, transparent 1.2px); background-size: 22px 22px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  a { color: inherit; }
+  header { padding-top: 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .back { text-decoration: none; font-weight: 700; background: var(--card); border: 2.5px solid var(--line); border-radius: 12px; padding: 6px 14px; box-shadow: 3px 3px 0 var(--line); }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 900; text-decoration: none; }
+  .logo svg { width: 44px; height: 41px; }
+
+  h1 { margin: 18px 0 2px; font-size: clamp(1.6rem, 4.4vw, 2.3rem); font-weight: 900; line-height: 1.25; }
+  h1 .hl { background: linear-gradient(transparent 58%, var(--sun) 58%); padding: 0 4px; }
+  .lead { margin: 0 0 12px; color: var(--muted); }
+
+  /* 連線狀態列 */
+  .room { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; background: var(--card); border: 2.5px solid var(--line); border-radius: 999px; padding: 4px 14px; box-shadow: 3px 3px 0 var(--line); }
+  .pill .led { width: 11px; height: 11px; border-radius: 50%; background: #c9c3d6; border: 2px solid var(--line); flex: none; }
+  .pill.ok .led { background: var(--mint); }
+  .pill.wait .led { background: var(--sun); animation: blink 1s infinite; }
+  .pill.bad .led { background: var(--red); }
+  @keyframes blink { 50% { opacity: .3; } }
+  .code b { font-size: 1.15rem; letter-spacing: .12em; font-variant-numeric: tabular-nums; color: #d6337a; }
+  .room label.tg { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; cursor: pointer; }
+  .room label.tg input { width: 18px; height: 18px; accent-color: var(--pink); }
+  .join { display: inline-flex; gap: 6px; align-items: center; margin-left: auto; }
+  .join input { width: 9.5em; font: inherit; font-weight: 700; letter-spacing: .1em; padding: 5px 10px; border: 2.5px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); }
+  .sbtn { font: inherit; font-weight: 700; cursor: pointer; color: var(--ink); background: var(--sun); border: 2.5px solid var(--line); border-radius: 12px; padding: 5px 12px; box-shadow: 3px 3px 0 var(--line); }
+  .sbtn.w { background: var(--card); }
+  .sbtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--line); }
+
+  /* 白板本體 */
+  .stage-wrap { background: var(--card); border: 3px solid var(--line); border-radius: 20px; box-shadow: 6px 6px 0 var(--line); padding: 10px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding-bottom: 10px; }
+  .grp { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .grp + .grp { padding-left: 10px; border-left: 2px dashed #e4dcef; }
+  .tb { font: inherit; font-size: .9rem; font-weight: 700; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; height: 38px; min-width: 38px; justify-content: center; padding: 0 9px; background: #fff; border: 2px solid var(--line); border-radius: 11px; }
+  .tb[aria-pressed="true"] { background: var(--pink-soft); box-shadow: inset 0 0 0 2px var(--pink); }
+  .tb:disabled { opacity: .4; cursor: not-allowed; }
+  .tb .i { font-size: 1.05rem; line-height: 1; }
+  .sw { width: 30px; height: 30px; min-width: 30px; padding: 0; border-radius: 50%; }
+  .sw[aria-pressed="true"] { box-shadow: 0 0 0 3px #fff, 0 0 0 5.5px var(--ink); background: var(--c); }
+  .sz { width: 34px; min-width: 34px; padding: 0; }
+  .sz span { display: block; border-radius: 50%; background: var(--ink); }
+  select.tb { padding-right: 6px; }
+  @media (max-width: 760px) { .tb .t { display: none; } }
+
+  .stage { position: relative; display: grid; place-items: center; touch-action: none; }
+  .board { position: relative; border-radius: 10px; overflow: hidden; border: 2px solid #e4dcef; }
+  .board canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .board canvas.ov { touch-action: none; cursor: crosshair; }
+  .board.no canvas.ov { cursor: not-allowed; }
+  .msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(43,37,64,.88); color: #fff; font-weight: 700; padding: 12px 20px; border-radius: 14px; text-align: center; pointer-events: none; max-width: 86%; }
+  .msg[hidden] { display: none; }
+
+  /* 全螢幕：白板塞滿整個螢幕 */
+  .stage-wrap.fs { position: fixed; inset: 0; z-index: 40; border: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column;
+    padding: max(6px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+  .stage-wrap.fs .stage { flex: 1; min-height: 0; }
+  /* 手機打橫全螢幕：工具改放左邊一欄，白板用整個高度 */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .stage-wrap.fs { flex-direction: row; gap: 8px; }
+    .stage-wrap.fs .tools { flex-direction: column; flex-wrap: nowrap; align-items: stretch; width: 128px; flex: none; overflow-y: auto; padding: 0 2px 0 0; gap: 6px; }
+    .stage-wrap.fs .grp { justify-content: flex-start; }
+    .stage-wrap.fs .grp + .grp { padding: 6px 0 0; border-left: 0; border-top: 2px dashed #e4dcef; }
+    .stage-wrap.fs .tb .t { display: none; }
+  }
+
+  .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .help div { background: var(--card); border: 2.5px solid var(--line); border-radius: 16px; padding: 12px 16px; box-shadow: 3px 3px 0 var(--line); }
+  .help b { display: block; margin-bottom: 2px; }
+  .help p { margin: 0; color: var(--muted); font-size: .95rem; }
+  footer { text-align: center; color: var(--muted); padding: 30px 0 40px; }
+  .heart { color: var(--pink); }
+  .toast2 { position: fixed; left: 50%; top: max(16px, env(safe-area-inset-top, 0px)); transform: translate(-50%, -10px); opacity: 0; transition: .2s; z-index: 60; background: var(--ink); color: #fff; font-weight: 700; padding: 8px 18px; border-radius: 999px; pointer-events: none; }
+  .toast2.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="bf-half" stroke="#2b2540" stroke-width="3" stroke-linejoin="round">
+        <!-- 後翅（含尾突） -->
+        <path d="M57 54 C44 54 24 58 20 72 C17 83 26 92 35 90 C36 98 38 106 44 106 C49 105 48 96 46 89 C54 84 58 70 57 54 Z" fill="#36315c"/>
+        <path d="M53 61 C45 59 33 63 30 71 C29 79 39 82 46 78 C52 74 55 68 53 61 Z" fill="#fff6fb" stroke="none"/>
+        <circle cx="38" cy="72" r="3.4" fill="#ff7eb6" stroke="none"/>
+        <circle cx="46" cy="69" r="2.4" fill="#ff7eb6" stroke="none"/>
+        <circle cx="25" cy="82" r="2.3" fill="#ff5c7c" stroke="none"/>
+        <circle cx="33" cy="87" r="2" fill="#ff5c7c" stroke="none"/>
+        <circle cx="44" cy="101" r="2.2" fill="#ffd23f" stroke="none"/>
+        <!-- 前翅 -->
+        <path d="M57 47 C50 26 30 6 12 9 C3 11 2 24 7 34 C13 46 34 54 57 52 Z" fill="#36315c"/>
+        <g stroke="#5d5890" stroke-width="1.6" fill="none" stroke-linecap="round">
+          <path d="M52 45 L17 16"/><path d="M52 47 L9 29"/><path d="M53 49 L14 41"/>
+        </g>
+        <ellipse cx="48" cy="46" rx="8.5" ry="4.6" transform="rotate(22 48 46)" fill="#ff5c7c" stroke="none"/>
+        <g fill="#fff" stroke="none"><circle cx="13" cy="15" r="1.9"/><circle cx="7.5" cy="24" r="1.9"/><circle cx="9" cy="33" r="1.9"/></g>
+      </g>
+      <symbol id="bf-wings" viewBox="0 0 120 112">
+        <use href="#bf-half"/>
+        <use href="#bf-half" transform="matrix(-1 0 0 1 120 0)"/>
+      </symbol>
+      <symbol id="bf-body" viewBox="0 0 120 112">
+        <g fill="none" stroke="#2b2540" stroke-width="2.6" stroke-linecap="round">
+          <path d="M55 28 C52 17 46 11 40 11"/><path d="M65 28 C68 17 74 11 80 11"/>
+        </g>
+        <circle cx="39" cy="11" r="4.2" fill="#ff7eb6" stroke="#2b2540" stroke-width="2"/>
+        <circle cx="81" cy="11" r="4.2" fill="#ff7eb6" stroke="#2b2540" stroke-width="2"/>
+        <ellipse cx="60" cy="68" rx="7" ry="24" fill="#3a3354" stroke="#2b2540" stroke-width="3"/>
+        <g stroke="#ff7eb6" stroke-width="2" stroke-linecap="round"><path d="M56 70 H64"/><path d="M56.5 78 H63.5"/><path d="M57.5 86 H62.5"/></g>
+        <circle cx="60" cy="39" r="13.5" fill="#3a3354" stroke="#2b2540" stroke-width="3"/>
+        <ellipse cx="54.5" cy="38" rx="4.4" ry="5" fill="#fff"/><ellipse cx="65.5" cy="38" rx="4.4" ry="5" fill="#fff"/>
+        <circle cx="55.2" cy="39" r="2.7" fill="#2b2540"/><circle cx="66.2" cy="39" r="2.7" fill="#2b2540"/>
+        <circle cx="56.2" cy="37.6" r="1.1" fill="#fff"/><circle cx="67.2" cy="37.6" r="1.1" fill="#fff"/>
+        <ellipse cx="50.5" cy="45" rx="3.2" ry="1.9" fill="#ff7eb6"/><ellipse cx="69.5" cy="45" rx="3.2" ry="1.9" fill="#ff7eb6"/>
+        <path d="M57 45.5 Q60 48.5 63 45.5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+      </symbol>
+    </defs>
+  </svg>
+<div class="wrap">
+  <header>
+    <a class="back" href="index.html">← 回首頁</a>
+    <a class="logo" href="index.html"><svg viewBox="0 0 120 112" aria-hidden="true"><use href="#bf-wings"/><use href="#bf-body"/></svg>小朵兒的理化教室</a>
+  </header>
+  <div data-share="📣 把這個連結傳給對方，打開就能一起看白板" data-compact></div>
+
+  <h1>🖍️ 互動<span class="hl">白板</span></h1>
+  <p class="lead">你畫什麼，對方的電腦、手機上就馬上看到什麼。兩邊都可以畫，講解題目最方便。</p>
+
+  <div class="room">
+    <span class="pill wait" id="status"><span class="led"></span><span id="statusText">連線中…</span></span>
+    <span class="pill code">白板代碼 <b id="code">——</b></span>
+    <label class="tg" id="allowBox" hidden><input type="checkbox" id="allow" checked>對方也可以畫</label>
+    <button class="sbtn w" id="newBoard" type="button">🆕 開新白板</button>
+    <form class="join" id="joinForm">
+      <input id="joinCode" inputmode="numeric" autocomplete="off" maxlength="7" placeholder="輸入代碼" aria-label="輸入別人的白板代碼">
+      <button class="sbtn" type="submit">加入</button>
+    </form>
+  </div>
+
+  <div class="stage-wrap" id="wrapBox">
+    <div class="tools" id="tools">
+      <div class="grp" id="gTool"></div>
+      <div class="grp" id="gColor"></div>
+      <div class="grp" id="gSize"></div>
+      <div class="grp">
+        <button class="tb" id="undo" type="button" title="復原（Ctrl+Z）"><span class="i">↶</span><span class="t">復原</span></button>
+        <button class="tb" id="clear" type="button" title="清除所有筆跡"><span class="i">🗑️</span><span class="t">清除</span></button>
+      </div>
+      <div class="grp">
+        <select class="tb" id="paper" title="背景" aria-label="背景">
+          <option value="white">📄 白紙</option>
+          <option value="grid">🔲 方格</option>
+          <option value="black">🟩 黑板</option>
+        </select>
+        <button class="tb" id="imgBtn" type="button" title="放一張圖（例如題目照片）當背景"><span class="i">🖼️</span><span class="t">放圖片</span></button>
+        <button class="tb" id="imgDel" type="button" title="拿掉背景圖片" hidden><span class="i">✖</span><span class="t">拿掉圖</span></button>
+        <input type="file" id="imgFile" accept="image/*" hidden>
+      </div>
+      <div class="grp">
+        <button class="tb" id="save" type="button" title="存成圖片"><span class="i">💾</span><span class="t">存圖</span></button>
+        <button class="tb" id="fsBtn" type="button" title="全螢幕"><span class="i">⛶</span><span class="t">全螢幕</span></button>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="board" id="board">
+        <canvas id="cvBg"></canvas><canvas id="cvInk"></canvas><canvas id="cvOv" class="ov"></canvas>
+        <div class="msg" id="msg" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="help">
+    <div><b>① 傳連結</b><p>按上面「LINE」或「複製連結」傳給對方。對方打開就連上了，也可以在對方那邊輸入白板代碼。</p></div>
+    <div><b>② 邊講邊畫</b><p>說話可以同時開 LINE 通話。🔴 雷射筆只會亮一下，適合「你看這裡」。直線、箭頭接近水平或垂直時會自動拉直。</p></div>
+    <div><b>③ 東西存哪裡？</b><p>筆跡直接在兩台裝置之間傳，不經過資料庫。開白板的人電腦上會留一份，重新整理還在；想留下來就按 💾 存圖。</p></div>
+  </div>
+
+  <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
+</div>
+<div class="toast2" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  const BW = 1600, BH = 900;               // 白板的邏輯大小（16:9），座標都用這個，各台螢幕再縮放
+  const PREFIX = 'xdeb-wb-';                // 配對伺服器上的名稱前綴
+  const $ = id => document.getElementById(id);
+  const toastEl = $('toast'); let tt;
+  const toast = s => { toastEl.textContent = s; toastEl.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 2200); };
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+  };
+
+  /* ---------- 房間：網址 ?room=代碼。沒有代碼就開一個新的，自己當主持人 ---------- */
+  const qs = new URLSearchParams(location.search);
+  let code = (qs.get('room') || '').replace(/\D/g, '').slice(0, 6);
+  if (code.length !== 6) {
+    code = String(100000 + Math.floor(Math.random() * 900000));
+    store.set('wbh:' + code, '1');
+    history.replaceState(null, '', location.pathname + '?room=' + code);
+  }
+  const isHost = store.get('wbh:' + code) === '1';
+  $('code').textContent = code.slice(0, 3) + ' ' + code.slice(3);
+  // 分享列要等網址有代碼才載入，分享出去的才是這個白板
+  const sc = document.createElement('script'); sc.src = 'share.js?v=4'; document.body.appendChild(sc);
+
+  const me = Math.random().toString(36).slice(2, 7);
+  let seq = 0;
+
+  /* ---------- 狀態 ---------- */
+  let strokes = [], byId = Object.create(null), paper = 'white', bgImg = null, bgSrc = '', allow = true, people = 1;
+  const lasers = Object.create(null);       // 每個人的雷射筆軌跡
+  const COLORS = [['k', '黑（黑板上是白）'], ['#ff4d6d', '紅'], ['#3a86ff', '藍'], ['#20b07a', '綠'], ['#ff8c1a', '橘'], ['#ffd23f', '黃'], ['#8b5cf6', '紫']];
+  const TOOLS = [['pen', '✏️', '筆'], ['hl', '🖍️', '螢光筆'], ['line', '╱', '直線'], ['arrow', '➜', '箭頭'], ['rect', '▭', '方框'], ['oval', '◯', '圓'], ['eraser', '🧽', '橡皮擦'], ['laser', '🔴', '雷射筆']];
+  const SIZES = [[3, 5], [6, 8], [12, 12]];
+  let tool = 'pen', color = 'k', size = 6;
+  const SHAPES = { line: 1, arrow: 1, rect: 1, oval: 1 };
+
+  /* ---------- 畫布 ---------- */
+  const board = $('board'), cvBg = $('cvBg'), cvInk = $('cvInk'), cvOv = $('cvOv');
+  const bctx = cvBg.getContext('2d'), ictx = cvInk.getContext('2d'), octx = cvOv.getContext('2d');
+  let cssW = 0;
+
+  function fit() {
+    const wrap = $('wrapBox'), stage = $('stage'), fs = wrap.classList.contains('fs');
+    if (fs) stage.style.height = '';   // 先放掉一般模式的固定高度再量
+    const aw = stage.clientWidth;
+    const ah = fs ? stage.clientHeight : Math.max(200, window.innerHeight - $('tools').offsetHeight - 70);
+    const w = Math.floor(Math.min(aw, ah * BW / BH)), h = Math.floor(w * BH / BW);
+    if (!fs) stage.style.height = h + 'px';
+    board.style.width = w + 'px'; board.style.height = h + 'px';
+    if (w === cssW) return;
+    cssW = w;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), k = w * dpr / BW;
+    [cvBg, cvInk, cvOv].forEach(c => { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); });
+    [bctx, ictx, octx].forEach(c => c.setTransform(k, 0, 0, k, 0, 0));
+    drawBg(); redrawInk(); kick();
+  }
+
+  const PAPER = { white: '#fffdf8', grid: '#fffdf8', black: '#21423a' };
+  function drawBg() {
+    bctx.save(); bctx.fillStyle = PAPER[paper] || PAPER.white; bctx.fillRect(0, 0, BW, BH);
+    if (paper === 'grid') {
+      for (let x = 0; x <= BW; x += 50) { bctx.fillStyle = x % 250 ? '#eef0fb' : '#d9def5'; bctx.fillRect(x - 1, 0, 2, BH); }
+      for (let y = 0; y <= BH; y += 50) { bctx.fillStyle = y % 250 ? '#eef0fb' : '#d9def5'; bctx.fillRect(0, y - 1, BW, 2); }
+    }
+    if (bgImg) {
+      const s = Math.min(BW / bgImg.width, BH / bgImg.height), w = bgImg.width * s, h = bgImg.height * s;
+      bctx.drawImage(bgImg, (BW - w) / 2, (BH - h) / 2, w, h);
+    }
+    bctx.restore();
+    $('imgDel').hidden = !bgImg;
+  }
+
+  const ink = c => c === 'k' ? (paper === 'black' ? '#f4f1e8' : '#2b2540') : c;
+
+  function tracePath(ctx, pts) {
+    ctx.beginPath();
+    if (pts.length === 1) { ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[0][0] + 0.1, pts[0][1]); return; }
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2;
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+    }
+    const l = pts[pts.length - 1]; ctx.lineTo(l[0], l[1]);
+  }
+
+  function drawStroke(ctx, s) {
+    const p = s.pts; if (!p || !p.length) return;
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (s.tool === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.strokeStyle = '#000'; ctx.lineWidth = s.w * 5; tracePath(ctx, p); ctx.stroke(); ctx.restore(); return; }
+    ctx.strokeStyle = ink(s.c); ctx.fillStyle = ink(s.c); ctx.lineWidth = s.w;
+    if (s.tool === 'hl') { ctx.globalAlpha = 0.38; ctx.lineWidth = s.w * 3.5; ctx.lineCap = 'butt'; tracePath(ctx, p); ctx.stroke(); }
+    else if (s.tool === 'pen') { tracePath(ctx, p); ctx.stroke(); }
+    else if (p.length >= 2) {
+      const [a, b] = p;
+      if (s.tool === 'line' || s.tool === 'arrow') {
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        if (s.tool === 'arrow') {
+          const ang = Math.atan2(b[1] - a[1], b[0] - a[0]), L = Math.max(16, s.w * 4);
+          if (Math.hypot(b[0] - a[0], b[1] - a[1]) > 4) {
+            ctx.beginPath(); ctx.moveTo(b[0], b[1]);
+            ctx.lineTo(b[0] - L * Math.cos(ang - 0.42), b[1] - L * Math.sin(ang - 0.42));
+            ctx.lineTo(b[0] - L * Math.cos(ang + 0.42), b[1] - L * Math.sin(ang + 0.42));
+            ctx.closePath(); ctx.fill();
+          }
+        }
+      } else if (s.tool === 'rect') {
+        ctx.strokeRect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+      } else if (s.tool === 'oval') {
+        ctx.beginPath(); ctx.ellipse((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) / 2 + 0.1, Math.abs(b[1] - a[1]) / 2 + 0.1, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // 橡皮擦一邊拖一邊直接擦在筆跡層（其他筆畫完才落到筆跡層，畫的過程先畫在最上層）
+  function eraseFrom(s, from) {
+    const p = s.pts; ictx.save(); ictx.globalCompositeOperation = 'destination-out'; ictx.lineCap = 'round'; ictx.lineJoin = 'round'; ictx.lineWidth = s.w * 5;
+    ictx.beginPath();
+    const i0 = Math.max(1, from);
+    if (p.length === 1) { ictx.moveTo(p[0][0], p[0][1]); ictx.lineTo(p[0][0] + 0.1, p[0][1]); }
+    else { ictx.moveTo(p[i0 - 1][0], p[i0 - 1][1]); for (let i = i0; i < p.length; i++) ictx.lineTo(p[i][0], p[i][1]); }
+    ictx.stroke(); ictx.restore();
+  }
+
+  function redrawInk() {
+    ictx.clearRect(0, 0, BW, BH);
+    for (const s of strokes) if (s.done || s.tool === 'eraser') drawStroke(ictx, s);
+  }
+
+  // 最上層：畫到一半的筆畫 + 雷射筆。只有需要時才跑動畫
+  let raf = 0;
+  const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  function frame(now) {
+    raf = 0; now = performance.now();
+    octx.clearRect(0, 0, BW, BH);
+    let live = false;
+    for (const s of strokes) if (!s.done && s.tool !== 'eraser') { drawStroke(octx, s); live = true; }
+    for (const k in lasers) {
+      const L = lasers[k]; L.pts = L.pts.filter((q, i, a) => now - q[2] < 650 || (L.on && i === a.length - 1));   // 按著不動時紅點留著
+      if (!L.pts.length) { if (!L.on) delete lasers[k]; continue; }
+      live = true;
+      octx.save(); octx.lineCap = 'round'; octx.lineJoin = 'round';
+      for (let i = 1; i < L.pts.length; i++) {
+        const a = L.pts[i - 1], b = L.pts[i], f = 1 - (now - b[2]) / 650;
+        octx.strokeStyle = `rgba(255,40,80,${(f * 0.75).toFixed(3)})`; octx.lineWidth = 4 + f * 8;
+        octx.beginPath(); octx.moveTo(a[0], a[1]); octx.lineTo(b[0], b[1]); octx.stroke();
+      }
+      const h = L.pts[L.pts.length - 1];
+      octx.fillStyle = 'rgba(255,40,80,.25)'; octx.beginPath(); octx.arc(h[0], h[1], 22, 0, 7); octx.fill();
+      octx.fillStyle = '#ff2850'; octx.beginPath(); octx.arc(h[0], h[1], 9, 0, 7); octx.fill();
+      octx.fillStyle = '#fff'; octx.beginPath(); octx.arc(h[0] - 3, h[1] - 3, 3, 0, 7); octx.fill();
+      octx.restore();
+    }
+    if (live) kick();
+  }
+
+  function setImg(src) {
+    bgSrc = src || '';
+    if (!src) { bgImg = null; drawBg(); saveSoon(); return; }
+    const im = new Image(); im.onload = () => { if (bgSrc === src) { bgImg = im; drawBg(); } }; im.src = src;
+    saveSoon();
+  }
+
+  /* ---------- 收到動作就套用（自己的動作也走這裡） ---------- */
+  const clean = s => ({ id: String(s.id).slice(0, 40), by: String(s.by).slice(0, 12), tool: TOOLS.some(t => t[0] === s.tool) ? s.tool : 'pen',
+    c: typeof s.c === 'string' ? s.c.slice(0, 9) : 'k', w: Math.max(1, Math.min(40, +s.w || 6)), pts: Array.isArray(s.pts) ? s.pts.slice(0, 20000) : [], done: !!s.done });
+
+  function apply(m) {
+    let s;
+    switch (m.t) {
+      case 's':
+        if (byId[m.s.id]) break;
+        s = clean(m.s); s.done = false; strokes.push(s); byId[s.id] = s;
+        if (s.tool === 'eraser') eraseFrom(s, 0);
+        break;
+      case 'p':
+        s = byId[m.id]; if (!s || !Array.isArray(m.pts)) break;
+        { const k = s.pts.length; for (const q of m.pts) s.pts.push(q); if (s.tool === 'eraser') eraseFrom(s, k); }
+        break;
+      case 'u':
+        s = byId[m.id]; if (s && Array.isArray(m.pts)) s.pts = m.pts.slice(0, 2);
+        break;
+      case 'e':
+        s = byId[m.id]; if (!s || s.done) break;
+        s.done = true; if (s.tool !== 'eraser') drawStroke(ictx, s); saveSoon();
+        break;
+      case 'undo':
+        s = byId[m.id]; if (!s) break;
+        strokes = strokes.filter(x => x !== s); delete byId[m.id]; redrawInk(); saveSoon();
+        break;
+      case 'clear':
+        strokes = []; byId = Object.create(null); redrawInk(); saveSoon();
+        break;
+      case 'paper':
+        if (!PAPER[m.v]) break;
+        paper = m.v; $('paper').value = paper; drawBg(); redrawInk(); saveSoon();
+        break;
+      case 'bg':
+        if (m.img && !/^data:image\/(jpeg|png|webp);base64,/.test(m.img)) break;
+        setImg(m.img || '');
+        break;
+      case 'l': {
+        const L = lasers[m.by] || (lasers[m.by] = { pts: [], on: true });
+        L.on = true; L.pts.push([+m.x, +m.y, performance.now()]);
+        break;
+      }
+      case 'lo':
+        if (lasers[m.by]) lasers[m.by].on = false;
+        break;
+      case 'init':
+        strokes = (m.strokes || []).map(clean); byId = Object.create(null); strokes.forEach(x => { byId[x.id] = x; });
+        paper = PAPER[m.paper] ? m.paper : 'white'; $('paper').value = paper;
+        allow = m.allow !== false; setImg(m.img || ''); drawBg(); redrawInk(); refreshUI();
+        break;
+      case 'allow':
+        allow = !!m.v; refreshUI(); toast(allow ? '開白板的人讓你也可以畫了 ✏️' : '現在只能看，不能畫');
+        break;
+      case 'n':
+        people = +m.n || 1; setStatus('ok');
+        break;
+    }
+    kick();
+  }
+
+  /* ---------- 連線（PeerJS：免費配對伺服器牽線，之後兩台直接傳） ---------- */
+  const PeerC = window.Peer || (window.peerjs && window.peerjs.Peer);
+  const conns = new Set();                 // 主持人：連進來的人
+  let hostConn = null, peer = null;
+  let stateNow = 'wait';
+
+  function setStatus(st, text) {
+    stateNow = st;
+    const el = $('status'); el.className = 'pill ' + st;
+    $('statusText').textContent = text || (st === 'ok'
+      ? (isHost ? (people > 1 ? `已連線 · 共 ${people} 人在白板上` : '白板開好了，等對方打開連結…') : `已連上白板 · 共 ${people} 人`)
+      : '連線中…');
+    const msg = $('msg');
+    if (!isHost && st !== 'ok') { msg.hidden = false; msg.textContent = text || '連線中…'; } else msg.hidden = true;
+  }
+
+  function send(m, except) {
+    if (isHost) { for (const c of conns) if (c !== except && c.open) try { c.send(m); } catch (e) {} }
+    else if (hostConn && hostConn.open) try { hostConn.send(m); } catch (e) {}
+  }
+  const act = m => { apply(m); send(m); };
+  const countPeople = () => { people = 1 + [...conns].filter(c => c.open).length; send({ t: 'n', n: people }); setStatus('ok'); };
+  const snapshot = () => ({ t: 'init', strokes: strokes.filter(s => s.done), paper, img: bgSrc, allow });
+
+  const DRAW = { s: 1, p: 1, u: 1, e: 1, undo: 1, clear: 1, l: 1, lo: 1, bg: 1, paper: 1 };
+  function startHost(tries) {
+    peer = new PeerC(PREFIX + code, { debug: 0 });
+    peer.on('open', () => { setStatus('ok'); countPeople(); });
+    peer.on('connection', c => {
+      c.on('open', () => { conns.add(c); try { c.send(snapshot()); } catch (e) {} countPeople(); toast('有人加入白板了 👋'); });
+      c.on('data', m => {
+        if (!m || typeof m !== 'object' || !DRAW[m.t]) return;
+        if (!allow && m.t !== 'lo') return;  // 關掉「對方也可以畫」時不收對方的筆跡
+        apply(m); send(m, c);                // 轉給其他人
+      });
+      const bye = () => { if (conns.delete(c)) countPeople(); };
+      c.on('close', bye); c.on('error', bye);
+    });
+    peer.on('disconnected', () => { setStatus('wait', '跟配對伺服器斷線，重新連線中…'); setTimeout(() => { try { peer.reconnect(); } catch (e) {} }, 1500); });
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id' && tries < 15) {   // 剛重新整理，舊的還沒放掉
+        setStatus('wait', '重新開白板中…'); try { peer.destroy(); } catch (e) {}
+        setTimeout(() => startHost(tries + 1), 2000);
+      } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
+        setStatus('bad', '網路連不上，稍後自動重試…');
+      } else if (err.type === 'unavailable-id') {
+        setStatus('bad', '這個白板代碼被別人用了，請按「開新白板」');
+      }
+    });
+  }
+
+  let retry = 0;
+  function connectHost() {
+    if (!peer || peer.destroyed) return;
+    if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} setTimeout(connectHost, 2000); return; }
+    const c = peer.connect(PREFIX + code, { reliable: true });
+    hostConn = c;
+    c.on('open', () => { retry = 0; setStatus('ok'); });
+    c.on('data', m => { if (m && typeof m === 'object') apply(m); });
+    c.on('close', () => { if (hostConn === c) { hostConn = null; setStatus('wait', '開白板的人離開了，等他回來會自動接上…'); setTimeout(connectHost, 3000); } });
+  }
+  function startGuest() {
+    peer = new PeerC({ debug: 0 });
+    peer.on('open', connectHost);
+    peer.on('disconnected', () => setTimeout(() => { try { peer.reconnect(); } catch (e) {} }, 1500));
+    peer.on('error', err => {
+      if (err.type === 'peer-unavailable') {
+        hostConn = null; retry++;
+        setStatus('wait', retry > 2 ? '還沒找到這個白板，請確認代碼，或等開白板的人打開網頁…' : '找白板中…');
+        setTimeout(connectHost, 3000);
+      } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
+        setStatus('bad', '網路連不上，稍後自動重試…'); setTimeout(connectHost, 4000);
+      }
+    });
+  }
+
+  /* ---------- 主持人存一份在自己電腦 ---------- */
+  let saveT = 0;
+  function saveSoon() {
+    if (!isHost) return; clearTimeout(saveT);
+    saveT = setTimeout(() => {
+      const d = { strokes: strokes.filter(s => s.done), paper, img: bgSrc };
+      if (!store.set('wb:' + code, JSON.stringify(d))) { d.img = ''; store.set('wb:' + code, JSON.stringify(d)); }
+    }, 700);
+  }
+  if (isHost) {
+    try { const d = JSON.parse(store.get('wb:' + code) || 'null'); if (d) apply({ t: 'init', strokes: d.strokes, paper: d.paper, img: d.img, allow: true }); } catch (e) {}
+  }
+
+  /* ---------- 工具列 ---------- */
+  function mk(parent, html, title, onClick, cls) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tb' + (cls ? ' ' + cls : ''); b.innerHTML = html; b.title = title;
+    b.addEventListener('click', onClick); parent.appendChild(b); return b;
+  }
+  const toolBtns = TOOLS.map(([k, i, t]) => { const b = mk($('gTool'), `<span class="i">${i}</span><span class="t">${t}</span>`, t, () => { tool = k; refreshUI(); }); b.dataset.k = k; return b; });
+  const colorBtns = COLORS.map(([c, t]) => {
+    const b = mk($('gColor'), '', t, () => { color = c; if (tool === 'eraser' || tool === 'laser') tool = 'pen'; refreshUI(); }, 'sw');
+    b.style.setProperty('--c', c === 'k' ? '#2b2540' : c); b.style.background = c === 'k' ? '#2b2540' : c; b.dataset.c = c; b.setAttribute('aria-label', t); return b;
+  });
+  const sizeBtns = SIZES.map(([w, d], n) => { const b = mk($('gSize'), `<span style="width:${d}px;height:${d}px"></span>`, ['細', '中', '粗'][n], () => { size = w; refreshUI(); }, 'sz'); b.dataset.w = w; return b; });
+
+  const canDraw = () => isHost || allow;
+  function refreshUI() {
+    const ok = canDraw();
+    toolBtns.forEach(b => { b.setAttribute('aria-pressed', b.dataset.k === tool); b.disabled = !ok; });
+    colorBtns.forEach(b => { b.setAttribute('aria-pressed', b.dataset.c === color && tool !== 'eraser' && tool !== 'laser'); b.disabled = !ok; });
+    sizeBtns.forEach(b => { b.setAttribute('aria-pressed', +b.dataset.w === size); b.disabled = !ok; });
+    ['undo', 'clear', 'paper', 'imgBtn', 'imgDel'].forEach(id => { $(id).disabled = !ok; });
+    board.classList.toggle('no', !ok);
+    cvOv.style.cursor = !ok ? 'not-allowed' : tool === 'laser' ? 'pointer' : tool === 'eraser' ? 'cell' : 'crosshair';
+  }
+
+  $('undo').addEventListener('click', undo);
+  function undo() {
+    if (!canDraw()) return;
+    for (let i = strokes.length - 1; i >= 0; i--) if (strokes[i].by === me && strokes[i].done) { act({ t: 'undo', id: strokes[i].id }); return; }
+    toast('沒有可以復原的了');
+  }
+  $('clear').addEventListener('click', () => { if (canDraw() && strokes.length && confirm('要清除白板上所有人的筆跡嗎？（背景圖片會保留）')) act({ t: 'clear' }); });
+  $('paper').addEventListener('change', e => act({ t: 'paper', v: e.target.value }));
+  $('imgBtn').addEventListener('click', () => $('imgFile').click());
+  $('imgDel').addEventListener('click', () => act({ t: 'bg', img: '' }));
+  $('imgFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {   // 縮到白板大小、轉成 JPEG 再傳，手機照片才不會太大
+      const s = Math.min(1, BW / im.width, BH / im.height), c = document.createElement('canvas');
+      c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); act({ t: 'bg', img: c.toDataURL('image/jpeg', 0.82) }); toast('圖片放上去了，對方也看得到');
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); toast('這個檔案打不開，換一張試試'); };
+    im.src = url;
+  });
+  $('save').addEventListener('click', () => {
+    const c = document.createElement('canvas'); c.width = cvBg.width; c.height = cvBg.height;
+    const x = c.getContext('2d'); x.drawImage(cvBg, 0, 0); x.drawImage(cvInk, 0, 0);
+    c.toBlob(b => {
+      if (!b) return; const a = document.createElement('a'), d = new Date();
+      a.href = URL.createObjectURL(b); a.download = `白板-${d.getMonth() + 1}月${d.getDate()}日-${d.getHours()}點${String(d.getMinutes()).padStart(2, '0')}.png`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }, 'image/png');
+  });
+  $('fsBtn').addEventListener('click', () => {
+    const w = $('wrapBox'), on = !w.classList.contains('fs');
+    w.classList.toggle('fs', on); document.body.style.overflow = on ? 'hidden' : '';
+    $('fsBtn').querySelector('.t').textContent = on ? '離開全螢幕' : '全螢幕';
+    try { if (on && w.requestFullscreen) w.requestFullscreen().catch(() => {}); else if (!on && document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    cssW = 0; fit(); setTimeout(() => { cssW = 0; fit(); }, 300);
+  });
+  document.addEventListener('fullscreenchange', () => {
+    cssW = 0; setTimeout(fit, 50);
+    if (!document.fullscreenElement && $('wrapBox').classList.contains('fs')) $('fsBtn').click();
+  });
+  $('allowBox').hidden = !isHost;
+  $('allow').addEventListener('change', e => { allow = e.target.checked; send({ t: 'allow', v: allow }); toast(allow ? '對方現在也可以畫' : '對方現在只能看'); });
+  $('newBoard').addEventListener('click', () => { location.href = location.pathname; });
+  $('joinForm').addEventListener('submit', e => {
+    e.preventDefault(); const v = $('joinCode').value.replace(/\D/g, '');
+    if (v.length !== 6) { toast('白板代碼是 6 個數字'); return; }
+    location.href = location.pathname + '?room=' + v;
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('input,select,textarea')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  });
+
+  /* ---------- 在白板上畫 ---------- */
+  let cur = null, pend = [], curPid = null, lastSend = 0, laserOn = false;
+  const R = v => Math.round(v * 10) / 10;
+  function pt(e) {
+    const r = cvOv.getBoundingClientRect(); if (!r.width || !r.height) return null;
+    return [R(Math.max(0, Math.min(BW, (e.clientX - r.left) / r.width * BW))), R(Math.max(0, Math.min(BH, (e.clientY - r.top) / r.height * BH)))];
+  }
+  function snap(a, b, t) {   // 直線、箭頭接近水平或垂直就拉直
+    if (t !== 'line' && t !== 'arrow') return b;
+    const ang = Math.abs(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI);
+    if (ang < 5 || ang > 175) return [b[0], a[1]];
+    if (Math.abs(ang - 90) < 5) return [a[0], b[1]];
+    return b;
+  }
+  function flush(force) {
+    const now = performance.now(); if (!force && now - lastSend < 35) return; lastSend = now;
+    if (!cur) return;
+    if (SHAPES[cur.tool]) send({ t: 'u', id: cur.id, pts: cur.pts });
+    else if (pend.length) { send({ t: 'p', id: cur.id, pts: pend }); pend = []; }
+  }
+  let laserSent = 0;
+  function laserAt(p) {
+    apply({ t: 'l', by: me, x: p[0], y: p[1] });
+    const now = performance.now(); if (now - laserSent > 30) { laserSent = now; send({ t: 'l', by: me, x: p[0], y: p[1] }); }
+  }
+
+  cvOv.addEventListener('pointerdown', e => {
+    if (!canDraw()) { toast('開白板的人關掉了「對方也可以畫」'); return; }
+    if (cur || laserOn || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault(); curPid = e.pointerId;
+    try { cvOv.setPointerCapture(e.pointerId); } catch (err) {}
+    const p = pt(e); if (!p) return;
+    if (tool === 'laser') { laserOn = true; laserAt(p); return; }
+    const s = { id: me + '-' + (++seq), by: me, tool, c: tool === 'eraser' ? '' : (tool === 'hl' && color === 'k' ? '#ffd23f' : color), w: size, pts: SHAPES[tool] ? [p, p] : [p] };
+    act({ t: 's', s }); cur = byId[s.id]; pend = [];
+  });
+  cvOv.addEventListener('pointermove', e => {
+    if (e.pointerId !== curPid) return;
+    if (laserOn) { const q = pt(e); if (q) laserAt(q); return; }
+    if (!cur) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    if (SHAPES[cur.tool]) { const q = pt(e); if (q) cur.pts = [cur.pts[0], snap(cur.pts[0], q, cur.tool)]; }
+    else {
+      const k = cur.pts.length;
+      for (const ev of (evs.length ? evs : [e])) {
+        const p = pt(ev), l = cur.pts[cur.pts.length - 1];
+        if (!p || Math.hypot(p[0] - l[0], p[1] - l[1]) < 1.2) continue;
+        cur.pts.push(p); pend.push(p);
+      }
+      if (cur.tool === 'eraser' && cur.pts.length > k) eraseFrom(cur, k);
+    }
+    flush(false); kick();
+  });
+  function end(e) {
+    if (e.pointerId !== curPid) return; curPid = null;
+    if (laserOn) { laserOn = false; act({ t: 'lo', by: me }); return; }
+    if (!cur) return;
+    flush(true); const id = cur.id; cur = null; act({ t: 'e', id });
+  }
+  cvOv.addEventListener('pointerup', end);
+  cvOv.addEventListener('pointercancel', end);
+  cvOv.addEventListener('lostpointercapture', end);
+
+  /* ---------- 開始 ---------- */
+  refreshUI();
+  window.addEventListener('resize', () => { cssW = 0; fit(); });
+  fit();
+  if (!PeerC) { setStatus('bad', '連線元件載入失敗，請重新整理'); }
+  else if (isHost) { setStatus('wait', '開白板中…'); startHost(0); }
+  else { setStatus('wait', '找白板中…'); startGuest(); }
+  window.addEventListener('pagehide', () => { try { peer && peer.destroy(); } catch (e) {} });
+  window.WB = { get strokes() { return strokes; }, get people() { return people; }, get state() { return stateNow; }, isHost, code };  // 測試用
+})();
+</script>
+</body>
+</html>

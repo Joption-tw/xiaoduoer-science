@@ -1,4 +1,5 @@
-/* 每一頁共用的分享列：在頁面最上面（header 下方）放 <div data-share data-compact></div>，再載入這支檔案就會出現
+/* 頁尾的閱覽人數也在這支檔案（最下面 views）。
+   每一頁共用的分享列：在頁面最上面（header 下方）放 <div data-share data-compact></div>，再載入這支檔案就會出現
    「分享這一頁 / LINE / 複製連結」三顆按鈕。分享的是目前這一頁的網址和標題。 */
 (function () {
   const css = `
@@ -28,7 +29,9 @@
     transition: opacity .2s, transform .2s;
   }
   .share-toast.show { opacity: 1; transform: translate(-50%, 0); }
-  @media (prefers-reduced-motion: reduce) { .share-btn, .share-toast { transition: none; } }`;
+  @media (prefers-reduced-motion: reduce) { .share-btn, .share-toast { transition: none; } }
+  footer .views { margin-top: 8px; font-size: .88rem; color: #6d6782; }
+  footer .views b { color: #2b2540; font-variant-numeric: tabular-nums; }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   const toast = document.createElement('div'); toast.className = 'share-toast'; toast.setAttribute('role', 'status');
@@ -77,5 +80,25 @@
       'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url()) + '&text=' + encodeURIComponent(title());
     box.querySelector('[data-act="share"]').addEventListener('click', share);
     box.querySelector('[data-act="copy"]').addEventListener('click', copy);
+  });
+})();
+
+/* 閱覽人數：每一頁最底下顯示「這一頁閱覽 N 次 · 全站累計 M 次」。
+   計數用免費的 Abacus（abacus.jasoncameron.dev，不用帳號），只送頁面名稱，不送任何個人資料。
+   同一個瀏覽器分頁重新整理不重複算（sessionStorage）。不在 github.io 上（本機測試）時記到 -dev 計數器。 */
+(function () {
+  const foot = document.querySelector('footer'); if (!foot || !window.fetch) return;
+  const el = document.createElement('div'); el.className = 'views'; el.textContent = '👀 閱覽人數讀取中…'; foot.appendChild(el);
+  const NS = /github\.io$/.test(location.hostname) ? 'xiaoduoer-science' : 'xiaoduoer-science-dev';
+  const file = (location.pathname.split('/').pop() || 'index.html').replace(/\.html$/, '') || 'index';
+  const c = new URLSearchParams(location.search).get('c');
+  const key = ((file === 'index' ? 'home' : file) + (c ? '-' + c : '')).toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 60);
+  const first = k => { try { if (sessionStorage.getItem('v:' + k)) return false; sessionStorage.setItem('v:' + k, '1'); } catch (e) {} return true; };
+  const count = k => fetch(`https://abacus.jasoncameron.dev/${first(k) ? 'hit' : 'get'}/${NS}/${k}`)
+    .then(r => r.ok ? r.json() : null).then(j => j && typeof j.value === 'number' ? j.value : null).catch(() => null);
+  Promise.all([count(key), count('site')]).then(([p, s]) => {
+    if (p == null && s == null) { el.remove(); return; }
+    const f = n => n == null ? '—' : n.toLocaleString('zh-TW');
+    el.innerHTML = `👀 這一頁閱覽 <b>${f(p)}</b> 次　·　全站累計 <b>${f(s)}</b> 次`;
   });
 })();

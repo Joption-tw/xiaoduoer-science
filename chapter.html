@@ -81,6 +81,14 @@
   .box.err { background: #ffe3e6; }
   .box.see { background: var(--earth-soft); }
   .box.see a { display: inline-block; margin: 2px 6px 2px 0; }
+  /* 想一想：先想，再點開答案 */
+  .think { margin-top: 14px; border: 2.5px dashed var(--line); border-radius: 16px; background: #fffaf0; }
+  .think summary { cursor: pointer; list-style: none; padding: 10px 14px; font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .think summary::-webkit-details-marker { display: none; }
+  .think .tk { background: var(--sun); border: 2px solid var(--line); border-radius: 8px; padding: 0 8px; font-size: .85rem; font-weight: 900; flex: none; }
+  .think .open { margin-left: auto; font-size: .8rem; color: #2f6db5; font-weight: 900; flex: none; }
+  .think[open] .open { display: none; }
+  .think p { margin: 0; padding: 0 14px 12px; color: #2b2540; }
 
   .big { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; text-decoration: none; margin: 4px 0 14px; padding: 14px 18px; border: 2.5px solid var(--line); border-radius: 18px; background: var(--pink-soft); box-shadow: var(--shadow); font-weight: 700; }
   .big .ic { font-size: 2rem; }
@@ -192,7 +200,7 @@
   <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
 </div>
 
-<script src="curriculum.js?v=3"></script>
+<script src="curriculum.js?v=4"></script>
 <script>
 /* ===== 讀網址：chapter.html?c=8a-3 ===== */
 const P = new URLSearchParams(location.search);
@@ -230,12 +238,16 @@ function render() {
   let h = `<div class="title"><span class="pill ${chap.sub}">${term.name} · 第 ${chap.n} 章 · ${SUB[chap.sub]}</span>
     <h1>${chap.icon} ${chap.title}</h1><p>${N ? md(N.intro || '') : '這一章的重點還在整理中。'}</p></div>`;
   h += '<nav class="toc">' + chap.secs.map(s => {
-    const an = N && N.s[s[0]] && (N.s[s[0]].w || N.s[s[0]].big) ? ' <span class="an">▶</span>' : '';
+    const mw = ((window.MORE || {})[CID] || {})[s[0]] || {};
+    const an = (N && N.s[s[0]] && (N.s[s[0]].w || N.s[s[0]].big)) || mw.w ? ' <span class="an">▶</span>' : '';
     return `<a href="#s${s[0]}">${s[0]} ${s[1]}${an}</a>`;
   }).join('') + (N && N.quiz ? '<a href="#quiz">✏️ 小測驗</a>' : '') + '</nav>';
 
   for (const s of chap.secs) {
-    const d = (N && N.s[s[0]]) || {};
+    const d0 = (N && N.s[s[0]]) || {}, mo = ((window.MORE || {})[CID] || {})[s[0]] || {};
+    // 合併補充內容：動畫、重點接在後面，另外加「想一想」
+    const d = Object.assign({}, d0, { w: [].concat(d0.w || [], mo.w || []), p: (d0.p || mo.p) ? [].concat(d0.p || [], mo.p || []) : null, q: mo.q });
+    if (!d.w.length) d.w = null;
     h += `<section class="sec" id="s${s[0]}"><div class="sec-h"><span class="no">${s[0]}</span><h2>${s[1]}</h2>${isNow(s[0]) ? '<span class="now">正在學</span>' : ''}</div>`;
     if (d.big) h += `<a class="big" href="${d.big.href}"><span class="ic">${d.big.ic || '🔍'}</span><span><b>${d.big.t}</b>${d.big.d || ''}</span><span class="go">打開 ▶</span></a>`;
     for (const w of [].concat(d.w || [])) h += `<div class="wg" data-w="${w}"></div>`;
@@ -250,6 +262,7 @@ function render() {
     if (d.err) bx.push(`<div class="box err"><h4>⚠️ 容易錯</h4><ul>${[].concat(d.err).map(x => `<li>${md(x)}</li>`).join('')}</ul></div>`);
     if (d.see) bx.push(`<div class="box see"><h4>🔗 一起看</h4><p>${d.see.map(([to, t]) => `<a class="xl" href="${href(to)}">${t}</a>`).join('')}</p></div>`);
     if (bx.length) h += '<div class="boxes">' + bx.join('') + '</div>';
+    if (d.q) h += `<details class="think"><summary><span class="tk">💭 想一想</span>${md(d.q[0])}<span class="open">點我看答案</span></summary><p>👉 ${md(d.q[1])}</p></details>`;
     if (!d.p && !d.w && !d.big) h += '<p style="color:var(--muted)">這一節的重點還在整理中。</p>';
     h += '</section>';
   }
@@ -295,10 +308,11 @@ function render() {
 }
 
 Promise.all([
-  load(`data/${TERM}.js?v=1`).catch(() => {}),
-  load('widgets.js?v=1').then(() => load('widgets-2.js?v=1')).catch(() => {}),
+  load(`data/${TERM}.js?v=3`).catch(() => {}),
+  load('data/more.js?v=1').catch(() => {}),
+  load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1')])).catch(() => {}),
 ]).then(render);
 </script>
-<script src="share.js?v=3"></script>
+<script src="share.js?v=4"></script>
 </body>
 </html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<!-- 第 1 課分享縮圖原稿：1200×630。圖是凸透鏡、物體在 F～2F 之間（u = 1.6f），光線 ①② 交在倒立放大實像的尖端。
+     改完用 og/render.sh 重新產生 optics.png -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#2b2540; --pink:#ff7eb6; --sun:#ffd23f; --phy:#4f8cff; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #fff8ef; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: var(--ink);
+    background-image: radial-gradient(#f1e3cf 2px, transparent 2px); background-size: 28px 28px; }
+  .left { position: absolute; left: 56px; top: 56px; width: 470px; }
+  .pill { display: inline-block; background: var(--phy); color: #fff; font-weight: 900; font-size: 30px; padding: 4px 22px;
+    border: 3px solid var(--ink); border-radius: 999px; transform: rotate(-2deg); box-shadow: 3px 3px 0 var(--ink); }
+  h1 { font-size: 78px; font-weight: 900; line-height: 1.15; margin-top: 24px; }
+  h1 .hl { background: linear-gradient(transparent 60%, var(--sun) 60%); padding: 0 4px; }
+  .sub { font-size: 30px; font-weight: 700; color: #6d6782; margin-top: 18px; line-height: 1.5; }
+  .badges { display: flex; gap: 12px; margin-top: 26px; }
+  .badge { font-size: 30px; font-weight: 900; padding: 6px 18px; border: 3px solid var(--ink); border-radius: 14px; }
+  .a { background: #ffe8e0; } .b { background: #e3edff; } .c { background: #e4f9ef; }
+  .brand { position: absolute; left: 56px; bottom: 44px; display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 900; }
+  .brand svg { width: 66px; height: 62px; }
+  .stage { position: absolute; left: 560px; top: 40px; width: 600px; height: 540px; background: #fbfdff;
+    border: 5px solid var(--ink); border-radius: 30px; box-shadow: 10px 10px 0 var(--ink); overflow: hidden; }
+  .stage svg { display: block; }
+</style></head>
+<body>
+  <!--BF_DEFS-->
+  <div class="left">
+    <span class="pill">第 1 課 · 光</span>
+    <h1>面鏡與透鏡<br>的<span class="hl">成像</span></h1>
+    <p class="sub">拖拉物體，看像跑去哪裡、<br>變大還是變小！</p>
+    <div class="badges"><span class="badge a">倒立</span><span class="badge b">放大</span><span class="badge c">實像</span></div>
+  </div>
+  <div class="brand"><svg viewBox="0 0 120 112"><use href="#bf-wings"/><use href="#bf-body"/></svg>小朵兒的理化教室</div>
+
+  <!-- 舞台座標：透鏡 x=250，主軸 y=270，f=100；物體 x=90 高 70；像 x=516.7 高 -116.7 -->
+  <div class="stage">
+    <svg width="590" height="530" viewBox="0 0 590 530" font-family="Noto Sans TC, Microsoft JhengHei, sans-serif">
+      <g stroke="#eef2f8" stroke-width="1.5">
+        <path d="M0 30H590M0 60H590M0 90H590M0 120H590M0 150H590M0 180H590M0 210H590M0 240H590M0 300H590M0 330H590M0 360H590M0 390H590M0 420H590M0 450H590M0 480H590M0 510H590"/>
+        <path d="M10 0V530M40 0V530M70 0V530M100 0V530M130 0V530M160 0V530M190 0V530M220 0V530M280 0V530M310 0V530M340 0V530M370 0V530M400 0V530M430 0V530M460 0V530M490 0V530M520 0V530M550 0V530M580 0V530"/>
+      </g>
+      <rect x="50" y="0" width="100" height="530" fill="rgba(79,140,255,.12)"/>
+      <line x1="0" y1="270" x2="590" y2="270" stroke="#9a94ad" stroke-width="2" stroke-dasharray="12 7"/>
+      <!-- 凸透鏡 -->
+      <path d="M250 60 Q280 270 250 480 Q220 270 250 60 Z" fill="rgba(120,190,255,.35)" stroke="#2f6db5" stroke-width="4"/>
+      <text x="250" y="40" text-anchor="middle" font-size="26" font-weight="900" fill="#2f6db5">凸透鏡</text>
+      <!-- F、2F -->
+      <g fill="#2b2540" stroke="#2b2540" stroke-width="2.5">
+        <circle cx="150" cy="270" r="6"/><circle cx="350" cy="270" r="6"/><circle cx="50" cy="270" r="6"/><circle cx="450" cy="270" r="6"/>
+      </g>
+      <g font-size="24" font-weight="900" fill="#2b2540" text-anchor="middle">
+        <text x="150" y="304">F</text><text x="350" y="304">F</text><text x="50" y="304">2F</text><text x="450" y="304">2F</text>
+      </g>
+      <!-- 光線 ①：平行主軸 → 通過另一側 F -->
+      <g stroke="#ff4d6d" stroke-width="4.5" stroke-linecap="round" fill="none">
+        <path d="M90 200 L250 200 L590 438"/>
+      </g>
+      <!-- 光線 ②：通過 F → 平行主軸 -->
+      <g stroke="#3a86ff" stroke-width="4.5" stroke-linecap="round" fill="none">
+        <path d="M90 200 L250 386.7 L590 386.7"/>
+      </g>
+      <!-- 光線方向箭頭 -->
+      <g fill="#ff4d6d"><path d="M180 200 l-18 -10 v20 z"/><path d="M430 326 l-21 -2 l11 -17 z"/></g>
+      <g fill="#3a86ff"><path d="M175 299 l-19 -5 l13 -15 z"/><path d="M400 386.7 l-18 -10 v20 z"/></g>
+      <!-- 光點 -->
+      <g stroke-width="3.5" fill="#fff">
+        <circle cx="130" cy="200" r="6" stroke="#ff4d6d"/><circle cx="220" cy="200" r="6" stroke="#ff4d6d"/><circle cx="330" cy="256" r="6" stroke="#ff4d6d"/><circle cx="470" cy="354" r="6" stroke="#ff4d6d"/>
+        <circle cx="130" cy="246.7" r="6" stroke="#3a86ff"/><circle cx="210" cy="340" r="6" stroke="#3a86ff"/><circle cx="330" cy="386.7" r="6" stroke="#3a86ff"/><circle cx="460" cy="386.7" r="6" stroke="#3a86ff"/>
+      </g>
+      <!-- 物體（箭頭尖端 = 光線起點） -->
+      <path d="M90 270 V226" stroke="#7b5cff" stroke-width="8" stroke-linecap="round"/>
+      <path d="M90 200 l-13 26 h26 z" fill="#7b5cff"/>
+      <rect x="22" y="146" width="64" height="32" rx="16" fill="#fff" stroke="#7b5cff" stroke-width="3"/>
+      <text x="54" y="169" text-anchor="middle" font-size="20" font-weight="900" fill="#7b5cff">物體</text>
+      <!-- 實像（倒立，尖端 = 光線交點） -->
+      <path d="M516.7 270 V360" stroke="#ff8c1a" stroke-width="8" stroke-linecap="round"/>
+      <path d="M516.7 386.7 l-13 -26 h26 z" fill="#ff8c1a"/>
+      <rect x="484.7" y="404" width="64" height="32" rx="16" fill="#fff" stroke="#ff8c1a" stroke-width="3"/>
+      <text x="516.7" y="427" text-anchor="middle" font-size="20" font-weight="900" fill="#ff8c1a">實像</text>
+      <!-- 拖拉提示 -->
+      <g transform="translate(36 470)">
+        <rect width="250" height="42" rx="21" fill="#fff8d6" stroke="#2b2540" stroke-width="2.5"/>
+        <text x="125" y="29" text-anchor="middle" font-size="21" font-weight="900" fill="#2b2540">↔ 拖拉物體試試看</text>
+      </g>
+    </svg>
+  </div>
+</body></html>

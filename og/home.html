@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<!-- 首頁分享縮圖（FB / LINE 預覽卡片）原稿：1200×630。改完用 og/render.sh 重新產生 home.png -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#2b2540; --pink:#ff7eb6; --pink-soft:#ffe0ee; --sun:#ffd23f; --phy:#4f8cff; --chem:#ff7a59; --mint:#3ccf9e; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #fff8ef; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: var(--ink);
+    background-image: radial-gradient(#f1e3cf 2px, transparent 2px); background-size: 28px 28px; }
+  .card { position: absolute; inset: 36px 44px 46px 36px; background: #fff; border: 5px solid var(--ink); border-radius: 40px;
+    box-shadow: 10px 10px 0 var(--ink); overflow: hidden; }
+  .card::before { content: ""; position: absolute; right: -120px; top: -140px; width: 560px; height: 560px; border-radius: 50%; background: var(--pink-soft); }
+  .left { position: absolute; left: 60px; top: 54px; width: 640px; }
+  .pill { display: inline-block; background: var(--pink); color: #fff; font-weight: 900; font-size: 28px; padding: 6px 24px;
+    border: 3px solid var(--ink); border-radius: 999px; transform: rotate(-2deg); box-shadow: 3px 3px 0 var(--ink); }
+  h1 { font-size: 96px; font-weight: 900; line-height: 1.12; margin-top: 26px; letter-spacing: 2px; }
+  h1 .nick { color: var(--pink); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+  h1 .hl { background: linear-gradient(transparent 60%, var(--sun) 60%); padding: 0 6px; }
+  .sub { font-size: 34px; font-weight: 700; color: #6d6782; margin-top: 18px; }
+  .chips { display: flex; gap: 14px; margin-top: 30px; }
+  .chip { font-size: 26px; font-weight: 900; padding: 6px 20px; border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); }
+  .c1 { background: #e3edff; } .c2 { background: #fff3c4; } .c3 { background: #e4f9ef; }
+  .bf { position: absolute; display: block; filter: drop-shadow(5px 5px 0 rgba(43,37,64,.3)); }
+  .b1 { width: 380px; height: 355px; right: 50px; top: 90px; transform: rotate(-10deg); }
+  .b2 { width: 120px; height: 112px; right: 400px; top: 395px; transform: rotate(12deg); }
+  .b3 { width: 90px; height: 84px; right: 40px; top: 430px; transform: rotate(-16deg); }
+  .trail { position: absolute; right: 0; top: 0; width: 600px; height: 548px; }
+</style></head>
+<body>
+  <!--BF_DEFS-->
+  <div class="card">
+    <svg class="trail" viewBox="0 0 600 548"><path d="M150 520 C 90 430 260 420 230 340 C 200 270 120 300 160 220" fill="none" stroke="#ff7eb6" stroke-width="5" stroke-dasharray="3 16" stroke-linecap="round"/></svg>
+    <div class="left">
+      <span class="pill">國中理化 · 爸爸做的互動教材</span>
+      <h1><span class="nick">小朵兒</span>的<br><span class="hl">理化</span>教室</h1>
+      <p class="sub">一起把理化變成好玩的事！</p>
+      <div class="chips"><span class="chip c1">拖拉動畫</span><span class="chip c2">常考表格</span><span class="chip c3">小測驗</span></div>
+    </div>
+    <svg class="bf b1" viewBox="0 0 120 112"><use href="#bf-wings"/><use href="#bf-body"/></svg>
+    <svg class="bf b2" viewBox="0 0 120 112"><use href="#bf-wings"/><use href="#bf-body"/></svg>
+    <svg class="bf b3" viewBox="0 0 120 112"><use href="#bf-wings"/><use href="#bf-body"/></svg>
+  </div>
+</body></html>

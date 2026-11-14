@@ -173,9 +173,14 @@
   .sec .num { font-weight: 900; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 2.2em; }
   .sec .nm { flex: 1; min-width: 0; }
   .sec .badge { flex: none; font-size: .76rem; font-weight: 900; border-radius: 8px; padding: 1px 8px; border: 2px solid var(--line); }
-  a.sec { background: var(--pink-soft); border-color: var(--line); font-weight: 700; }
-  a.sec:hover { background: #ffd0e6; }
+  a.sec { background: #fff; border-color: #ebe5f2; }
+  a.sec:hover { background: var(--sun-soft, #fff3c4); border-color: var(--line); }
+  a.sec.anim { background: var(--pink-soft); border-color: var(--line); font-weight: 700; }
+  a.sec.anim:hover { background: #ffd0e6; }
   a.sec .badge { background: var(--mint); color: #fff; }
+  a.sec .badge.note { background: #fff; color: var(--muted); border-color: #d8d2e4; font-weight: 700; }
+  a.chap-head { text-decoration: none; color: inherit; border-radius: 14px; }
+  a.chap-head:hover h3 { text-decoration: underline; text-decoration-thickness: 3px; text-decoration-color: var(--sun); }
   .sec.now { box-shadow: 0 0 0 3px var(--sun); }
   .sec .badge.nowb { background: var(--sun); color: var(--ink); }
   .sec:not(a) .nm { color: #4a4560; }
@@ -289,7 +294,7 @@
     <main>
       <section id="units">
         <div class="sec-head">
-          <h2>課本目錄<span>照課本章節排好，有 ▶ 的就能玩</span></h2>
+          <h2>課本目錄<span>點任何一節看重點，有 ▶ 的還有動畫</span></h2>
           <div class="filters" id="terms" role="tablist" aria-label="選擇學期"></div>
         </div>
         <a class="now-bar" id="nowBar" hidden></a>
@@ -312,7 +317,7 @@
     <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
   </div>
 
-<script src="curriculum.js?v=2"></script>
+<script src="curriculum.js?v=3"></script>
 <script>
   // 課本目錄（資料在 curriculum.js）
   (function () {
@@ -322,6 +327,10 @@
     let cur = B.now.term;
     try { const t = localStorage.getItem(KEY); if (B.terms.some(x => x.id === t)) cur = t; } catch (e) {}
 
+    // 每一節連到章節重點頁（第 3 格有網址就用那個）
+    const secHref = (t, c, x) => x[2] || `chapter.html?c=${t.id}-${c.n}#s${x[0]}`;
+    const hasAnim = (t, c, x) => ((B.anim || {})[`${t.id}-${c.n}`] || []).includes(x[0]);
+
     // 現在學到哪裡
     const nt = B.terms.find(t => t.id === B.now.term);
     let nowSec = null, nowChap = null;
@@ -330,8 +339,8 @@
     if (nowSec) {
       bar.hidden = false;
       bar.innerHTML = `<span class="pin">📍</span><span class="txt">現在學到：${nt.name} 第 ${nowChap.n} 章　<b>${nowSec[0]} ${nowSec[1]}</b></span>` +
-        (nowSec[2] ? '<span class="go">去玩動畫 ▶</span>' : '');
-      if (nowSec[2]) bar.href = nowSec[2]; else bar.removeAttribute('href');
+        '<span class="go">去看重點和動畫 ▶</span>';
+      bar.href = secHref(nt, nowChap, nowSec);
     }
     document.getElementById('bookNote').textContent =
       `章節依小朵兒用的${B.version}課本排列。`;
@@ -344,12 +353,12 @@
         const rows = c.secs.map(x => {
           const isNow = term.id === B.now.term && x[0] === B.now.sec;
           const nowB = isNow ? '<span class="badge nowb">正在學</span>' : '';
-          return x[2]
-            ? `<li><a class="sec${isNow ? ' now' : ''}" href="${x[2]}"><span class="num">${x[0]}</span><span class="nm">${x[1]}</span>${nowB}<span class="badge">▶ 動畫</span></a></li>`
-            : `<li><div class="sec${isNow ? ' now' : ''}"><span class="num">${x[0]}</span><span class="nm">${x[1]}</span>${nowB}</div></li>`;
+          const an = hasAnim(term, c, x);
+          return `<li><a class="sec${an ? ' anim' : ''}${isNow ? ' now' : ''}" href="${secHref(term, c, x)}"><span class="num">${x[0]}</span><span class="nm">${x[1]}</span>${nowB}` +
+            (an ? '<span class="badge">▶ 動畫</span>' : '<span class="badge note">📒 重點</span>') + '</a></li>';
         }).join('');
-        return `<article class="chap ${c.sub}"><div class="chap-head"><div class="icon" aria-hidden="true">${c.icon}</div>` +
-          `<div><small>第 ${c.n} 章</small><h3>${c.title}</h3></div><span class="tag">${SUB[c.sub]}</span></div><ul class="secs">${rows}</ul></article>`;
+        return `<article class="chap ${c.sub}"><a class="chap-head" href="chapter.html?c=${term.id}-${c.n}"><div class="icon" aria-hidden="true">${c.icon}</div>` +
+          `<div><small>第 ${c.n} 章 · 整章重點 ›</small><h3>${c.title}</h3></div><span class="tag">${SUB[c.sub]}</span></a><ul class="secs">${rows}</ul></article>`;
       }).join('');
     }
     document.getElementById('terms').addEventListener('click', e => {

@@ -154,13 +154,12 @@
   <div data-share="📣 把這個連結傳給對方，打開就能一起看白板" data-compact></div>
 
   <h1>🖍️ 互動<span class="hl">白板</span></h1>
-  <p class="lead">你畫什麼，對方的電腦、手機上就馬上看到什麼。兩邊都可以畫，講解題目最方便。</p>
+  <p class="lead">打開就能畫。把連結傳給對方，你畫什麼他馬上看到，兩邊都可以畫。白板連結是固定的，下次打開還是同一個。</p>
 
   <div class="room">
     <span class="pill wait" id="status"><span class="led"></span><span id="statusText">連線中…</span></span>
     <span class="pill code">白板代碼 <b id="code">——</b></span>
-    <label class="tg" id="allowBox" hidden><input type="checkbox" id="allow" checked>對方也可以畫</label>
-    <button class="sbtn w" id="newBoard" type="button">🆕 開新白板</button>
+    <button class="sbtn w" id="newBoard" type="button" title="換一組新的白板代碼（舊的白板還留在這台）">🆕 換新白板</button>
     <form class="join" id="joinForm">
       <input id="joinCode" inputmode="numeric" autocomplete="off" maxlength="7" placeholder="輸入代碼" aria-label="輸入別人的白板代碼">
       <button class="sbtn" type="submit">加入</button>
@@ -202,7 +201,7 @@
   <div class="help">
     <div><b>① 傳連結</b><p>按上面「LINE」或「複製連結」傳給對方。對方打開就連上了，也可以在對方那邊輸入白板代碼。</p></div>
     <div><b>② 邊講邊畫</b><p>說話可以同時開 LINE 通話。🔴 雷射筆只會亮一下，適合「你看這裡」。直線、箭頭接近水平或垂直時會自動拉直。</p></div>
-    <div><b>③ 東西存哪裡？</b><p>筆跡直接在兩台裝置之間傳，不經過資料庫。開白板的人電腦上會留一份，重新整理還在；想留下來就按 💾 存圖。</p></div>
+    <div><b>③ 東西存哪裡？</b><p>白板代碼會記在這台裝置，下次打開還是同一個白板、同一個連結。筆跡直接在裝置之間傳，不經過資料庫，每台都會留一份；想永久留下就按 💾 存圖。</p></div>
   </div>
 
   <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
@@ -210,6 +209,8 @@
 <div class="toast2" id="toast" role="status"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>window.LIVE_MANUAL = true;</script>
+<script src="live.js?v=2"></script>
 <script>
 (function () {
   'use strict';
@@ -223,20 +224,16 @@
     set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
   };
 
-  /* ---------- 房間：網址 ?room=代碼。沒有代碼就開一個新的，自己當主持人 ---------- */
+  /* ---------- 教室代碼：網址 ?room=代碼 → 這台記住的代碼 → 都沒有才開新的。代碼固定，每次打開都是同一個白板 ---------- */
   const qs = new URLSearchParams(location.search);
   let code = (qs.get('room') || '').replace(/\D/g, '').slice(0, 6);
-  if (code.length !== 6) {
-    code = String(100000 + Math.floor(Math.random() * 900000));
-    store.set('wbh:' + code, '1');
-    history.replaceState(null, '', location.pathname + '?room=' + code);
-  }
-  const isHost = store.get('wbh:' + code) === '1';
+  if (code.length !== 6) code = LIVE.savedCode || LIVE.newCode();
+  history.replaceState(null, '', location.pathname + '?room=' + code);
   $('code').textContent = code.slice(0, 3) + ' ' + code.slice(3);
   // 分享列要等網址有代碼才載入，分享出去的才是這個白板
   const sc = document.createElement('script'); sc.src = 'share.js?v=4'; document.body.appendChild(sc);
 
-  const me = Math.random().toString(36).slice(2, 7);
+  const me = LIVE.me;
   let seq = 0;
 
   /* ---------- 狀態 ---------- */
@@ -429,101 +426,37 @@
       case 'allow':
         allow = !!m.v; refreshUI(); toast(allow ? '開白板的人讓你也可以畫了 ✏️' : '現在只能看，不能畫');
         break;
-      case 'n':
-        people = +m.n || 1; setStatus('ok');
-        break;
     }
     kick();
   }
 
-  /* ---------- 連線（PeerJS：免費配對伺服器牽線，之後兩台直接傳） ---------- */
-  const PeerC = window.Peer || (window.peerjs && window.peerjs.Peer);
-  const conns = new Set();                 // 主持人：連進來的人
-  let hostConn = null, peer = null;
-  let stateNow = 'wait';
-
-  function setStatus(st, text) {
-    stateNow = st;
-    const el = $('status'); el.className = 'pill ' + st;
-    $('statusText').textContent = text || (st === 'ok'
-      ? (isHost ? (people > 1 ? `已連線 · 共 ${people} 人在白板上` : '白板開好了，等對方打開連結…') : `已連上白板 · 共 ${people} 人`)
-      : '連線中…');
-    const msg = $('msg');
-    if (!isHost && st !== 'ok') { msg.hidden = false; msg.textContent = text || '連線中…'; } else msg.hidden = true;
+  /* ---------- 連線（live.js：同一個代碼的裝置連在一起，誰先到誰當中繼） ---------- */
+  let stateNow = 'off';
+  function setStatus(st) {
+    stateNow = st; people = LIVE.people;
+    $('status').className = 'pill ' + st;
+    $('statusText').textContent = st === 'ok' ? (people > 1 ? `已連線 · 共 ${people} 人在白板上` : '白板開好了，等對方打開連結…')
+      : st === 'bad' ? '網路連不上，自動重試中…（自己還是可以畫）' : '連線中…';
   }
-
-  function send(m, except) {
-    if (isHost) { for (const c of conns) if (c !== except && c.open) try { c.send(m); } catch (e) {} }
-    else if (hostConn && hostConn.open) try { hostConn.send(m); } catch (e) {}
-  }
+  const send = m => LIVE.send(m);
   const act = m => { apply(m); send(m); };
-  const countPeople = () => { people = 1 + [...conns].filter(c => c.open).length; send({ t: 'n', n: people }); setStatus('ok'); };
-  const snapshot = () => ({ t: 'init', strokes: strokes.filter(s => s.done), paper, img: bgSrc, allow });
+  const DRAW = { s: 1, p: 1, u: 1, e: 1, undo: 1, clear: 1, l: 1, lo: 1, bg: 1, paper: 1, init: 1 };
+  let lastN = 1;
+  LIVE.on('status', (st, n) => { setStatus(st); if (st === 'ok' && n > lastN) toast('有人加入白板了 👋'); lastN = n; });
+  LIVE.on('msg', m => { if (DRAW[m.t]) apply(m); });
+  LIVE.onInit(() => [{ t: 'init', strokes: strokes.filter(s => s.done), paper, img: bgSrc }]);
+  LIVE.on('elsewhere', m => toast('對方在「' + String(m.title || '').replace(/｜.*/, '') + '」'));
 
-  const DRAW = { s: 1, p: 1, u: 1, e: 1, undo: 1, clear: 1, l: 1, lo: 1, bg: 1, paper: 1 };
-  function startHost(tries) {
-    peer = new PeerC(PREFIX + code, { debug: 0 });
-    peer.on('open', () => { setStatus('ok'); countPeople(); });
-    peer.on('connection', c => {
-      c.on('open', () => { conns.add(c); try { c.send(snapshot()); } catch (e) {} countPeople(); toast('有人加入白板了 👋'); });
-      c.on('data', m => {
-        if (!m || typeof m !== 'object' || !DRAW[m.t]) return;
-        if (!allow && m.t !== 'lo') return;  // 關掉「對方也可以畫」時不收對方的筆跡
-        apply(m); send(m, c);                // 轉給其他人
-      });
-      const bye = () => { if (conns.delete(c)) countPeople(); };
-      c.on('close', bye); c.on('error', bye);
-    });
-    peer.on('disconnected', () => { setStatus('wait', '跟配對伺服器斷線，重新連線中…'); setTimeout(() => { try { peer.reconnect(); } catch (e) {} }, 1500); });
-    peer.on('error', err => {
-      if (err.type === 'unavailable-id' && tries < 15) {   // 剛重新整理，舊的還沒放掉
-        setStatus('wait', '重新開白板中…'); try { peer.destroy(); } catch (e) {}
-        setTimeout(() => startHost(tries + 1), 2000);
-      } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
-        setStatus('bad', '網路連不上，稍後自動重試…');
-      } else if (err.type === 'unavailable-id') {
-        setStatus('bad', '這個白板代碼被別人用了，請按「開新白板」');
-      }
-    });
-  }
-
-  let retry = 0;
-  function connectHost() {
-    if (!peer || peer.destroyed) return;
-    if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} setTimeout(connectHost, 2000); return; }
-    const c = peer.connect(PREFIX + code, { reliable: true });
-    hostConn = c;
-    c.on('open', () => { retry = 0; setStatus('ok'); });
-    c.on('data', m => { if (m && typeof m === 'object') apply(m); });
-    c.on('close', () => { if (hostConn === c) { hostConn = null; setStatus('wait', '開白板的人離開了，等他回來會自動接上…'); setTimeout(connectHost, 3000); } });
-  }
-  function startGuest() {
-    peer = new PeerC({ debug: 0 });
-    peer.on('open', connectHost);
-    peer.on('disconnected', () => setTimeout(() => { try { peer.reconnect(); } catch (e) {} }, 1500));
-    peer.on('error', err => {
-      if (err.type === 'peer-unavailable') {
-        hostConn = null; retry++;
-        setStatus('wait', retry > 2 ? '還沒找到這個白板，請確認代碼，或等開白板的人打開網頁…' : '找白板中…');
-        setTimeout(connectHost, 3000);
-      } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
-        setStatus('bad', '網路連不上，稍後自動重試…'); setTimeout(connectHost, 4000);
-      }
-    });
-  }
-
-  /* ---------- 主持人存一份在自己電腦 ---------- */
+  /* ---------- 每台裝置都存一份（下次打開同一個白板還在） ---------- */
   let saveT = 0;
   function saveSoon() {
-    if (!isHost) return; clearTimeout(saveT);
+    clearTimeout(saveT);
     saveT = setTimeout(() => {
       const d = { strokes: strokes.filter(s => s.done), paper, img: bgSrc };
       if (!store.set('wb:' + code, JSON.stringify(d))) { d.img = ''; store.set('wb:' + code, JSON.stringify(d)); }
     }, 700);
   }
-  if (isHost) {
-    try { const d = JSON.parse(store.get('wb:' + code) || 'null'); if (d) apply({ t: 'init', strokes: d.strokes, paper: d.paper, img: d.img, allow: true }); } catch (e) {}
-  }
+  try { const d = JSON.parse(store.get('wb:' + code) || 'null'); if (d) apply({ t: 'init', strokes: d.strokes, paper: d.paper, img: d.img }); } catch (e) {}
 
   /* ---------- 工具列 ---------- */
   function mk(parent, html, title, onClick, cls) {
@@ -537,7 +470,7 @@
   });
   const sizeBtns = SIZES.map(([w, d], n) => { const b = mk($('gSize'), `<span style="width:${d}px;height:${d}px"></span>`, ['細', '中', '粗'][n], () => { size = w; refreshUI(); }, 'sz'); b.dataset.w = w; return b; });
 
-  const canDraw = () => isHost || allow;
+  const canDraw = () => true;
   function refreshUI() {
     const ok = canDraw();
     toolBtns.forEach(b => { b.setAttribute('aria-pressed', b.dataset.k === tool); b.disabled = !ok; });
@@ -590,9 +523,7 @@
     cssW = 0; setTimeout(fit, 50);
     if (!document.fullscreenElement && $('wrapBox').classList.contains('fs')) $('fsBtn').click();
   });
-  $('allowBox').hidden = !isHost;
-  $('allow').addEventListener('change', e => { allow = e.target.checked; send({ t: 'allow', v: allow }); toast(allow ? '對方現在也可以畫' : '對方現在只能看'); });
-  $('newBoard').addEventListener('click', () => { location.href = location.pathname; });
+  $('newBoard').addEventListener('click', () => { if (confirm('換一個新的白板代碼？對方要用新的連結才進得來。')) location.href = location.pathname + '?room=' + LIVE.newCode(); });
   $('joinForm').addEventListener('submit', e => {
     e.preventDefault(); const v = $('joinCode').value.replace(/\D/g, '');
     if (v.length !== 6) { toast('白板代碼是 6 個數字'); return; }
@@ -670,11 +601,8 @@
   refreshUI();
   window.addEventListener('resize', () => { cssW = 0; fit(); });
   fit();
-  if (!PeerC) { setStatus('bad', '連線元件載入失敗，請重新整理'); }
-  else if (isHost) { setStatus('wait', '開白板中…'); startHost(0); }
-  else { setStatus('wait', '找白板中…'); startGuest(); }
-  window.addEventListener('pagehide', () => { try { peer && peer.destroy(); } catch (e) {} });
-  window.WB = { get strokes() { return strokes; }, get people() { return people; }, get state() { return stateNow; }, isHost, code };  // 測試用
+  LIVE.start(code);
+  window.WB = { get strokes() { return strokes; }, get people() { return LIVE.people; }, get state() { return stateNow; }, get role() { return LIVE.role; }, code };  // 測試用
 })();
 </script>
 </body>

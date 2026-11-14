@@ -312,7 +312,7 @@
     <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
   </div>
 
-<script src="curriculum.js?v=1"></script>
+<script src="curriculum.js?v=2"></script>
 <script>
   // 課本目錄（資料在 curriculum.js）
   (function () {
@@ -334,7 +334,7 @@
       if (nowSec[2]) bar.href = nowSec[2]; else bar.removeAttribute('href');
     }
     document.getElementById('bookNote').textContent =
-      `章節依${B.version}課本排列（康軒版八年級的章名和順序也一樣）。`;
+      `章節依小朵兒用的${B.version}課本排列。`;
 
     function render() {
       document.getElementById('terms').innerHTML = B.terms.map(t =>

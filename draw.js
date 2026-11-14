@@ -6,8 +6,12 @@
   if (window.XD_DRAW) return; window.XD_DRAW = 1;
   const LIVE = window.LIVE;
   const css = `
-  .xd-ov { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 900; pointer-events: none; touch-action: none; }
-  .xd-ov.on { pointer-events: auto; cursor: crosshair; }
+  /* 透明圖層：頁面自己的 canvas 樣式（白底、邊框、高度）不能套到這裡，不然會整片蓋住內容 */
+  canvas.xd-ov { position: fixed !important; inset: 0 !important; left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important;
+    min-height: 0 !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important;
+    background: transparent !important; box-shadow: none !important; outline: 0 !important; display: block !important; order: 0 !important;
+    grid-area: auto !important; z-index: 900; pointer-events: none; touch-action: none; }
+  canvas.xd-ov.on { pointer-events: auto; cursor: crosshair; }
   .xd-ui { position: fixed; z-index: 1000; font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; color: #2b2540; }
   .xd-fab { right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; align-items: center; }
   .xd-b { font: inherit; font-weight: 900; font-size: .95rem; cursor: pointer; color: #2b2540; background: #ffd23f; border: 2.5px solid #2b2540; border-radius: 999px; padding: 8px 16px; box-shadow: 3px 3px 0 #2b2540; display: inline-flex; align-items: center; gap: 6px; }

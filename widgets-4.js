@@ -35,13 +35,29 @@
   function player(el, title, steps, hMax, ratio) {
     const o = setup(el, title, hMax || 260, ratio || 0.52);
     o.el.querySelector('.wg-t').classList.add('st');
-    let i = 0, p = 0, playing = false, hold = 0, t = 0;
+    let i = 0, p = 0, playing = false, hold = 0, t = 0, manual = false; // manual：用滑鼠拖到一半時停在那裡，不自動畫完
+    const N = steps.length;
     const mk = (txt0, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'wbtn ' + (cls || 'ghost'); b.textContent = txt0; b.addEventListener('click', fn); o.ctl.appendChild(b); return b; };
-    const prev = mk('⏮ 上一步', () => { playing = false; if (i > 0) { i--; p = 1; } upd(); });
-    const play = mk('▶ 播放', () => { if (playing) { playing = false; } else { if (i === steps.length - 1 && p >= 1) { i = 0; p = 0; } playing = true; hold = 0; } upd(); }, ' ');
-    const next = mk('⏭ 下一步', () => { playing = false; if (i < steps.length - 1) { i++; p = 0; } upd(); });
+    const prev = mk('⏮ 上一步', () => { playing = false; manual = false; if (i > 0) { i--; p = 1; } upd(); });
+    const play = mk('▶ 播放', () => { manual = false; if (playing) { playing = false; } else { if (i === N - 1 && p >= 1) { i = 0; p = 0; } playing = true; hold = 0; } upd(); }, ' ');
+    const next = mk('⏭ 下一步', () => { playing = false; manual = false; if (i < N - 1) { i++; p = 0; } upd(); });
     const dots = document.createElement('span'); dots.style.cssText = 'display:inline-flex;gap:5px;align-items:center;margin-left:4px'; o.ctl.appendChild(dots);
-    dots.addEventListener('click', e => { const d = e.target.closest('[data-k]'); if (!d) return; playing = false; i = +d.dataset.k; p = 0; upd(); });
+    dots.addEventListener('click', e => { const d = e.target.closest('[data-k]'); if (!d) return; playing = false; manual = false; i = +d.dataset.k; p = 0; upd(); });
+    /* 用滑鼠（或手指）拖拉：下面的進度條，或直接在畫面上左右拖 */
+    const bar = document.createElement('label'); bar.style.cssText = 'flex-basis:100%;display:flex;align-items:center;gap:8px';
+    bar.innerHTML = `<span style="flex:none">🖱️ 拖拉看過程</span><input type="range" min="0" max="${N}" step="0.01" value="0" style="flex:1;width:auto;min-width:0;accent-color:#ff7eb6">`;
+    const sl = bar.querySelector('input'); o.ctl.appendChild(bar);
+    const setV = v => {
+      v = Math.max(0, Math.min(N, v)); playing = false; manual = true;
+      const k = Math.min(N - 1, Math.floor(v)), changed = k !== i;
+      i = k; p = v >= N ? 1 : v - k;
+      if (changed || play.textContent === '⏸ 暫停') upd();
+    };
+    sl.addEventListener('input', () => setV(+sl.value));
+    let dg = null; o.cv.style.cursor = 'ew-resize'; o.cv.title = '按住左右拖，可以前後看每一步';
+    o.cv.addEventListener('pointerdown', e => { dg = { x: e.clientX, v: i + p }; e.preventDefault(); try { o.cv.setPointerCapture(e.pointerId); } catch (err) { /* 拿不到擷取就靠 window 接手 */ } });
+    window.addEventListener('pointermove', e => { if (!dg || !o.W) return; setV(dg.v + (e.clientX - dg.x) / o.W * N * 1.2); sl.value = i + p; });
+    const stop = () => { dg = null; }; window.addEventListener('pointerup', stop); window.addEventListener('pointercancel', stop);
     function upd() {
       play.textContent = playing ? '⏸ 暫停' : (i === steps.length - 1 && p >= 1 ? '↺ 重播' : '▶ 播放');
       prev.disabled = i === 0; next.disabled = i === steps.length - 1;
@@ -55,8 +71,9 @@
     };
     animate(o, dt => {
       t += dt;
-      if (p < 1) p = Math.min(1, p + dt / 1.1);
+      if (p < 1 && !manual) p = Math.min(1, p + dt / 1.1);
       else if (playing) { hold += dt; if (hold > 1.8) { hold = 0; if (i < steps.length - 1) { i++; p = 0; upd(); } else { playing = false; upd(); } } }
+      if (!manual) sl.value = i + p;
       o.draw();
     });
     upd();

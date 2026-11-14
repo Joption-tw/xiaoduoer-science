@@ -312,7 +312,7 @@ function render() {
 Promise.all([
   load(`data/${TERM}.js?v=4`).catch(() => {}),
   load('data/more.js?v=2').catch(() => {}),
-  load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=1')])).catch(() => {}),
+  load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
 ]).then(render);
 </script>
 <script src="share.js?v=4"></script>

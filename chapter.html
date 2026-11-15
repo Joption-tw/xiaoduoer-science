@@ -158,6 +158,15 @@
   button, .opt { -webkit-tap-highlight-color: transparent; }
   @media (prefers-reduced-motion: reduce) { .big { transition: none; } }
 
+  /* 手機打橫：動畫框改左右兩欄，左邊動畫、右邊按鈕和說明，整個框塞進一個螢幕 */
+  @media (orientation: landscape) and (max-height: 540px) {
+    .wg { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 12px; align-items: start; padding: 8px 10px; }
+    .wg > .wg-t { grid-column: 1 / -1; margin-bottom: 6px; font-size: .95rem; }
+    .wg > canvas, .wg > .wbody { grid-column: 1; grid-row: 2 / span 2; }
+    .wg > .ctl { grid-column: 2; grid-row: 2; margin-top: 0; gap: 6px 10px; font-size: .88rem; }
+    .wg > .ctl input[type=range] { width: 100px; }
+    .wg > .read { grid-column: 2; grid-row: 3; margin-top: 8px; font-size: .86rem; padding: 6px 10px; max-height: calc(100vh - 190px); max-height: calc(100dvh - 190px); overflow-y: auto; }
+  }
   /* 手機打橫：框框左右貼齊螢幕（滿版），裡面的字避開瀏海（safe-area） */
   @media (orientation: landscape) and (max-height: 540px) {
     :root { --gl: max(12px, env(safe-area-inset-left, 0px)); --gr: max(12px, env(safe-area-inset-right, 0px)); }
@@ -328,7 +337,7 @@ function render() {
 Promise.all([
   load(`data/${TERM}.js?v=4`).catch(() => {}),
   load('data/more.js?v=2').catch(() => {}),
-  load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
+  load('widgets.js?v=3').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
 ]).then(render);
 </script>
 <script src="share.js?v=6"></script>

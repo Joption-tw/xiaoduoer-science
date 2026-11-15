@@ -5,6 +5,7 @@
   const INK = '#2b2540', MUTED = '#8a84a0', RED = '#ff4d6d', BLUE = '#3a86ff', GREEN = '#20b07a', ORANGE = '#ff8c1a', PURPLE = '#7b5cff';
   const FONT = '"Noto Sans TC","Microsoft JhengHei",sans-serif';
   const U = W._u = {};
+  const LAND = window.matchMedia('(orientation: landscape) and (max-height: 540px)');
 
   /* ---------- 共用工具 ---------- */
   U.setup = function (el, title, hMax, ratio) {
@@ -13,7 +14,8 @@
     const o = { el, cv, ctx, W: 0, H: 0, ctl: el.querySelector('.ctl'), read: el.querySelector('.read'), draw: null };
     const fit = () => {
       const w = cv.clientWidth; if (!w) return;
-      const hh = Math.round(Math.min(hMax, Math.max(180, w * (ratio || 0.55))));
+      let hh = Math.round(Math.min(hMax, Math.max(180, w * (ratio || 0.55))));
+      if (LAND.matches) hh = Math.min(hh, Math.max(150, window.innerHeight - 92));   // 手機打橫：整個動畫框要塞進一個螢幕
       if (Math.abs(cv.clientHeight - hh) > 1) cv.style.height = hh + 'px';
       const d = Math.min(window.devicePixelRatio || 1, 2);
       o.W = w; o.H = hh; cv.width = Math.round(w * d); cv.height = Math.round(hh * d);
@@ -22,6 +24,7 @@
     };
     cv.style.height = hMax + 'px';
     new ResizeObserver(fit).observe(cv);
+    if (LAND.addEventListener) LAND.addEventListener('change', () => setTimeout(fit, 50));
     fit();
     return o;
   };

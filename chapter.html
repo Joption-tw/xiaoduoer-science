@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>重點整理｜小朵兒的理化教室</title>
 <!-- 章節重點頁（共用版型）：網址 chapter.html?c=8a-3 → 讀 curriculum.js 的章名、data/8a.js 的重點、widgets.js 的動畫 -->
 <meta name="description" content="國中理化（翰林版）每一章的重點整理：互動動畫、表格、口訣、易錯觀念和小測驗。">
@@ -157,6 +157,14 @@
   }
   button, .opt { -webkit-tap-highlight-color: transparent; }
   @media (prefers-reduced-motion: reduce) { .big { transition: none; } }
+
+  /* 手機打橫：框框左右貼齊螢幕（滿版），裡面的字避開瀏海（safe-area） */
+  @media (orientation: landscape) and (max-height: 540px) {
+    :root { --gl: max(12px, env(safe-area-inset-left, 0px)); --gr: max(12px, env(safe-area-inset-right, 0px)); }
+    .wrap { max-width: none; padding-left: var(--gl); padding-right: var(--gr); }
+    section.sec, .sum { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left-width: 0; border-right-width: 0;
+      border-radius: 0; box-shadow: none; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  }
 </style>
 </head>
 <body>
@@ -325,6 +333,6 @@ Promise.all([
 </script>
 <script src="share.js?v=6"></script>
 <script src="live.js?v=4"></script>
-<script src="draw.js?v=8"></script>
+<script src="draw.js?v=9"></script>
 </body>
 </html>

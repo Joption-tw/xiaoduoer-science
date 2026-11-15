@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>小朵兒的理化教室</title>
 <!-- 分享到 FB / LINE 的預覽卡片。縮圖原稿在 og/，改圖後把 ?v= 加 1 -->
 <meta name="description" content="國中理化互動教材：拖拉動畫看懂成像、常考表格、小測驗，一起把理化變成好玩的事！">
@@ -210,6 +210,14 @@
     .sticker, .bf .wing { animation: none; }
     .btn, .card { transition: none; }
   }
+
+  /* 手機打橫：框框左右貼齊螢幕（滿版），裡面的字避開瀏海（safe-area） */
+  @media (orientation: landscape) and (max-height: 540px) {
+    :root { --gl: max(12px, env(safe-area-inset-left, 0px)); --gr: max(12px, env(safe-area-inset-right, 0px)); }
+    .wrap { max-width: none; padding-left: var(--gl); padding-right: var(--gr); }
+    .hero, .fact { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left-width: 0; border-right-width: 0;
+      border-radius: 0; box-shadow: none; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  }
 </style>
 </head>
 <body>
@@ -391,6 +399,6 @@
 </script>
 <script src="share.js?v=6"></script>
 <script src="live.js?v=4"></script>
-<script src="draw.js?v=8"></script>
+<script src="draw.js?v=9"></script>
 </body>
 </html>

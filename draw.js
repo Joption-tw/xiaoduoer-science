@@ -46,6 +46,14 @@
   .xd-ui[hidden] { display: none !important; }
   @media (max-width: 560px) { .xd-fab .lbl { display: none; } .xd-t .lbl { display: none; } }
   @media (max-width: 900px) { body { padding-bottom: 64px; } }
+  @media (orientation: landscape) and (max-height: 540px) {
+    /* 兩顆按鈕縮成小圓形、上下疊，少擋畫面 */
+    .xd-fab { flex-direction: column; gap: 6px; align-items: flex-end; } .xd-fab .lbl { display: none; }
+    .xd-fab .xd-b { width: 38px; height: 38px; padding: 0; justify-content: center; font-size: 1rem; box-shadow: 2px 2px 0 #2b2540; position: relative; }
+    .xd-live .lt { display: none; } .xd-live::after { content: "📡"; }
+    .xd-live .led { position: absolute; top: -4px; right: -4px; }
+    .xd-bar { padding: 5px 8px; gap: 4px; } .xd-t { height: 32px; min-width: 32px; } .xd-sw { width: 26px; min-width: 26px; height: 26px; } .xd-tip { display: none; }
+  }
   @media print { .xd-ov, .xd-ui { display: none !important; } }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };

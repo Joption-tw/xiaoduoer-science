@@ -15,7 +15,7 @@
     const fit = () => {
       const w = cv.clientWidth; if (!w) return;
       let hh = Math.round(Math.min(hMax, Math.max(180, w * (ratio || 0.55))));
-      if (LAND.matches) hh = Math.min(hh, Math.max(150, window.innerHeight - 92));   // 手機打橫：整個動畫框要塞進一個螢幕
+      if (LAND.matches) hh = Math.min(hh, Math.max(140, window.innerHeight - 112));   // 手機打橫：整個動畫框要塞進一個螢幕
       if (Math.abs(cv.clientHeight - hh) > 1) cv.style.height = hh + 'px';
       const d = Math.min(window.devicePixelRatio || 1, 2);
       o.W = w; o.H = hh; cv.width = Math.round(w * d); cv.height = Math.round(hh * d);

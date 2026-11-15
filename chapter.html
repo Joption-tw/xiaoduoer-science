@@ -171,7 +171,7 @@
   @media (orientation: landscape) and (max-height: 540px) {
     :root { --gl: max(12px, env(safe-area-inset-left, 0px)); --gr: max(12px, env(safe-area-inset-right, 0px)); }
     .wrap { max-width: none; padding-left: var(--gl); padding-right: var(--gr); }
-    section.sec, .sum { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left-width: 0; border-right-width: 0;
+    html:not(.pg) section.sec, html:not(.pg) .sum { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left-width: 0; border-right-width: 0;
       border-radius: 0; box-shadow: none; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
   }
 </style>
@@ -337,11 +337,12 @@ function render() {
 Promise.all([
   load(`data/${TERM}.js?v=4`).catch(() => {}),
   load('data/more.js?v=2').catch(() => {}),
-  load('widgets.js?v=3').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
+  load('widgets.js?v=4').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
 ]).then(render);
 </script>
 <script src="share.js?v=6"></script>
 <script src="live.js?v=4"></script>
 <script src="draw.js?v=9"></script>
+<script src="pages.js?v=6"></script>
 </body>
 </html>

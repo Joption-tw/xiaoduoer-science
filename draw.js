@@ -45,6 +45,7 @@
   .xd-toast.show { opacity: 1; }
   .xd-ui[hidden] { display: none !important; }
   @media (max-width: 560px) { .xd-fab .lbl { display: none; } .xd-t .lbl { display: none; } }
+  @media (max-width: 900px) { body { padding-bottom: 64px; } }
   @media print { .xd-ov, .xd-ui { display: none !important; } }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };

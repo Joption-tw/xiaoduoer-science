@@ -49,6 +49,15 @@
   .share-toast.show { opacity: 1; transform: translate(-50%, 0); }
   @media (prefers-reduced-motion: reduce) { .share-btn, .share-toast { transition: none; } }
   footer .views { margin-top: 8px; font-size: .88rem; color: #6d6782; }
+  .rot-hint { display: none; }
+  @media (orientation: portrait) and (max-width: 600px) {
+    .rot-hint { display: flex; align-items: center; gap: 6px; width: fit-content; margin: 0 0 6px auto; font: inherit; font-size: .8rem; font-weight: 700;
+      color: #6d6782; background: #fff; border: 2px dashed #c9c3d6; border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+    .rot-hint[hidden] { display: none; }
+    .rot-hint .ph { display: inline-block; animation: rot-ph 2.4s ease-in-out infinite; }
+  }
+  @keyframes rot-ph { 0%, 30% { transform: rotate(0); } 50%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+  @media (prefers-reduced-motion: reduce) { .rot-hint .ph { animation: none; } }
   footer .views b { color: #2b2540; font-variant-numeric: tabular-nums; }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -145,4 +154,31 @@
     const f = n => n == null ? '—' : n.toLocaleString('zh-TW');
     el.innerHTML = `👀 這一頁閱覽 <b>${f(p)}</b> 次　·　全站累計 <b>${f(s)}</b> 次`;
   });
+})();
+
+/* 手機直拿提示：動畫、太寬的表格、白板上方放一顆「📱 打橫看更清楚」。
+   只在手機直拿時顯示（CSS 控制）；表格塞得下就不顯示。按一下說明怎麼轉。章節頁內容是後來才產生的，所以載入後再掃幾次。 */
+(function () {
+  const SEL = '.wg, #sim, .stage-wrap, .scroll';
+  let toastT;
+  function tip() {
+    const t = document.querySelector('.share-toast'); if (!t) return;
+    t.textContent = '把手機轉成橫的就好（iPhone 先到控制中心關掉「直向鎖定」）';
+    t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+  function scan() {
+    document.querySelectorAll(SEL).forEach(el => {
+      if (el.closest('.wg') && el.classList.contains('scroll')) return;
+      let h = el.previousElementSibling && el.previousElementSibling.classList.contains('rot-hint') ? el.previousElementSibling : null;
+      if (!h) {
+        h = document.createElement('button'); h.type = 'button'; h.className = 'rot-hint';
+        h.innerHTML = '<span class="ph">📱</span> 打橫看更清楚'; h.addEventListener('click', tip);
+        el.parentNode.insertBefore(h, el);
+      }
+      if (el.classList.contains('scroll')) h.hidden = el.scrollWidth <= el.clientWidth + 2;   // 表格塞得下就不用提示
+    });
+  }
+  const go = () => { scan(); setTimeout(scan, 1500); setTimeout(scan, 4000); };
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+  window.addEventListener('resize', () => { clearTimeout(scan.t); scan.t = setTimeout(scan, 300); });
 })();

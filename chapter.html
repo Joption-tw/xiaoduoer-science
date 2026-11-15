@@ -70,6 +70,14 @@
   th { background: var(--ink); color: #fff; font-weight: 700; white-space: nowrap; }
   td:first-child { font-weight: 900; background: #faf6ee; }
   tr:last-child td { border-bottom: 0; }
+  /* 手機直拿：表格縮小；太寬就左右滑，第一欄固定在左邊 */
+  .scroll td:first-child, .scroll th:first-child { position: sticky; left: 0; z-index: 1; }
+  @media (max-width: 560px) {
+    .scroll table { font-size: .86rem; }
+    .scroll th, .scroll td { padding: 7px 5px; }
+    .scroll th { white-space: normal; }
+    .scroll th, .scroll td { word-break: keep-all; }
+  }
 
   .boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
   .box { border: 2.5px solid var(--line); border-radius: 16px; padding: 10px 14px; }
@@ -315,8 +323,8 @@ Promise.all([
   load('widgets.js?v=2').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
 ]).then(render);
 </script>
-<script src="share.js?v=5"></script>
+<script src="share.js?v=6"></script>
 <script src="live.js?v=4"></script>
-<script src="draw.js?v=7"></script>
+<script src="draw.js?v=8"></script>
 </body>
 </html>

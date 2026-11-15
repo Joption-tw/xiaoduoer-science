@@ -158,6 +158,18 @@
   .compare th:first-child, .compare td:first-child { background: #f6f3ec; color: var(--ink); text-align: left; white-space: nowrap; }
   .compare thead th:first-child { background: var(--ink); color: #fff; }
   .grp { font-size: .78rem; display: block; opacity: .85; font-weight: 500; }
+  /* 手機直拿：表格縮小盡量塞進螢幕；還是太寬就左右滑，第一欄固定在左邊不會跑掉 */
+  .scroll td:first-child, .scroll th:first-child { position: sticky; left: 0; z-index: 1; }
+  .scroll tbody td:first-child { background: #fff; }
+  .scroll tbody tr.now td:first-child { background: #fff1b8; }
+  .compare tbody td:first-child { background: #f6f3ec; }
+  @media (max-width: 600px) {
+    table { min-width: 0; font-size: .86rem; }
+    th, td { padding: 8px 5px; }
+    th { white-space: normal; }
+    th, td { word-break: keep-all; }   /* 「倒立」「縮小」不要被拆成一字一行 */
+    td:first-child { min-width: 4.6em; }
+  }
 
   .tips { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
   .tipcard {
@@ -1000,8 +1012,8 @@ $('quiz').addEventListener('click', e => {
   $('score').textContent = `得分：${correct} / ${answered}` + (answered === QUIZ.length ? (correct === QUIZ.length ? '　🎉 全對！太厲害了！' : '　💪 錯的再看一次表格就會了！') : '');
 });
 </script>
-<script src="share.js?v=5"></script>
+<script src="share.js?v=6"></script>
 <script src="live.js?v=4"></script>
-<script src="draw.js?v=7"></script>
+<script src="draw.js?v=8"></script>
 </body>
 </html>

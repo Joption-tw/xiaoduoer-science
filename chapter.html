@@ -227,7 +227,7 @@
   <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
 </div>
 
-<script src="curriculum.js?v=5"></script>
+<script src="curriculum.js?v=6"></script>
 <script>
 /* ===== 讀網址：chapter.html?c=8a-3 ===== */
 const P = new URLSearchParams(location.search);
@@ -238,6 +238,7 @@ const term = B.terms.find(t => t.id === TERM);
 const chap = term && term.chapters.find(c => String(c.n) === CHN);
 const SUB = { phy: '物理', chem: '化學', earth: '地科' };
 const $ = id => document.getElementById(id);
+const lab = id => /^E\d+$/.test(id) ? '實驗' + id.slice(1) : id;   // 實驗課：E1 → 實驗1
 
 function load(src) {
   return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
@@ -267,15 +268,15 @@ function render() {
   h += '<nav class="toc">' + chap.secs.map(s => {
     const mw = ((window.MORE || {})[CID] || {})[s[0]] || {};
     const an = (N && N.s[s[0]] && (N.s[s[0]].w || N.s[s[0]].big)) || mw.w ? ' <span class="an">▶</span>' : '';
-    return `<a href="#s${s[0]}">${s[0]} ${s[1]}${an}</a>`;
+    return `<a href="#s${s[0]}">${lab(s[0])} ${s[1]}${an}</a>`;
   }).join('') + (N && N.quiz ? '<a href="#quiz">✏️ 小測驗</a>' : '') + '</nav>';
 
   for (const s of chap.secs) {
     const d0 = (N && N.s[s[0]]) || {}, mo = ((window.MORE || {})[CID] || {})[s[0]] || {};
     // 合併補充內容：動畫、重點接在後面，另外加「想一想」
-    const d = Object.assign({}, d0, { w: [].concat(d0.w || [], mo.w || []), p: (d0.p || mo.p) ? [].concat(d0.p || [], mo.p || []) : null, q: mo.q });
+    const d = Object.assign({}, d0, { w: [].concat(d0.w || [], mo.w || []), p: (d0.p || mo.p) ? [].concat(d0.p || [], mo.p || []) : null, q: mo.q || d0.q });
     if (!d.w.length) d.w = null;
-    h += `<section class="sec" id="s${s[0]}"><div class="sec-h"><span class="no">${s[0]}</span><h2>${s[1]}</h2>${isNow(s[0]) ? '<span class="now">正在學</span>' : ''}</div>`;
+    h += `<section class="sec" id="s${s[0]}"><div class="sec-h"><span class="no">${lab(s[0])}</span><h2>${s[1]}</h2>${isNow(s[0]) ? '<span class="now">正在學</span>' : ''}</div>`;
     if (d.big) h += `<a class="big" href="${d.big.href}"><span class="ic">${d.big.ic || '🔍'}</span><span><b>${d.big.t}</b>${d.big.d || ''}</span><span class="go">打開 ▶</span></a>`;
     for (const w of [].concat(d.w || [])) h += `<div class="wg" data-w="${w}"></div>`;
     if (d.p) h += '<ul class="points">' + d.p.map(x => `<li>${md(x)}</li>`).join('') + '</ul>';
@@ -337,7 +338,7 @@ function render() {
 Promise.all([
   load(`data/${TERM}.js?v=4`).catch(() => {}),
   load('data/more.js?v=2').catch(() => {}),
-  load('widgets.js?v=4').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=2')])).catch(() => {}),
+  load('widgets.js?v=4').then(() => Promise.all([load('widgets-2.js?v=1'), load('widgets-3.js?v=1'), load('widgets-4.js?v=3')])).then(() => Promise.all([load('widgets-5.js?v=3'), load('widgets-6.js?v=1')])).catch(() => {}),
 ]).then(render);
 </script>
 <script src="share.js?v=6"></script>

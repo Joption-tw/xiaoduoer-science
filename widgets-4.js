@@ -249,4 +249,6 @@
       { cap: '生活應用：<b>冷氣裝高處</b>（冷空氣下沉）、<b>暖氣放低處</b>（熱空氣上升）；海陸風、天氣變化也是大規模的對流。', draw: (ctx, w, h, p) => { alpha(ctx, p, () => { txt(ctx, '❄️ 冷氣：高處', w * 0.12, 30, BLUE, 13, 'center', 900); txt(ctx, '🔥 暖氣：低處', w * 0.12, h - 30, RED, 13, 'center', 900); }); } },
     ], 270, 0.55);
   };
+  // 給其他動畫檔（widgets-5、6）共用
+  W._player = player; W._path = path; W._alpha = alpha; W._ease = ease;
 })();

@@ -325,7 +325,7 @@
     <footer>做給最親愛的小朵兒 <span class="heart">♥</span> 有問題隨時問爸爸</footer>
   </div>
 
-<script src="curriculum.js?v=5"></script>
+<script src="curriculum.js?v=6"></script>
 <script>
   // 課本目錄（資料在 curriculum.js）
   (function () {
@@ -336,6 +336,7 @@
     try { const t = localStorage.getItem(KEY); if (B.terms.some(x => x.id === t)) cur = t; } catch (e) {}
 
     // 每一節連到章節重點頁（第 3 格有網址就用那個）
+    const lab = id => /^E\d+$/.test(id) ? '實驗' + id.slice(1) : id;   // 實驗課：E1 → 實驗1
     const secHref = (t, c, x) => x[2] || `chapter.html?c=${t.id}-${c.n}#s${x[0]}`;
     const hasAnim = (t, c, x) => ((B.anim || {})[`${t.id}-${c.n}`] || []).includes(x[0]);
 
@@ -357,12 +358,13 @@
       document.getElementById('terms').innerHTML = B.terms.map(t =>
         `<button class="chip${t.id === cur ? ' on' : ''}" role="tab" aria-selected="${t.id === cur}" data-t="${t.id}" title="${t.full}">${t.name}</button>`).join('');
       const term = B.terms.find(t => t.id === cur);
+      document.getElementById('bookNote').textContent = term.note || `章節依小朵兒用的${B.version}課本排列。`;
       document.getElementById('chapters').innerHTML = term.chapters.map(c => {
         const rows = c.secs.map(x => {
           const isNow = term.id === B.now.term && x[0] === B.now.sec;
           const nowB = isNow ? '<span class="badge nowb">正在學</span>' : '';
           const an = hasAnim(term, c, x);
-          return `<li><a class="sec${an ? ' anim' : ''}${isNow ? ' now' : ''}" href="${secHref(term, c, x)}"><span class="num">${x[0]}</span><span class="nm">${x[1]}</span>${nowB}` +
+          return `<li><a class="sec${an ? ' anim' : ''}${isNow ? ' now' : ''}" href="${secHref(term, c, x)}"><span class="num">${lab(x[0])}</span><span class="nm">${x[1]}</span>${nowB}` +
             (an ? '<span class="badge">▶ 動畫</span>' : '<span class="badge note">📒 重點</span>') + '</a></li>';
         }).join('');
         return `<article class="chap ${c.sub}"><a class="chap-head" href="chapter.html?c=${term.id}-${c.n}"><div class="icon" aria-hidden="true">${c.icon}</div>` +
